@@ -1,0 +1,104 @@
+/Users/gooleseswsq1gmail.com/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Model B not available at http://localhost:8080: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /health (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8080): Failed to establish a new connection: [Errno 61] Connection refused"))
+WARNING:root:ChromaDB not installed. Install with: pip install chromadb
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'mình']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'mình', 'quý khách']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Lần 2 vẫn chứa từ cấm. Sử dụng fallback.
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'mình', 'mình.']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Response chứa từ cấm: ['mình']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Lần 2 vẫn chứa từ cấm. Sử dụng fallback.
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'mình']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'mình']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Lần 2 vẫn chứa từ cấm. Sử dụng fallback.
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'tôi', 'quý khách']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'bạn,', 'mình', 'tôi', 'quý khách']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Lần 2 vẫn chứa từ cấm. Sử dụng fallback.
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'bạn,', 'mình', 'mình.', 'quý khách']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'bạn,', 'mình']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Lần 2 vẫn chứa từ cấm. Sử dụng fallback.
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'mình']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'bạn,', 'mình']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Lần 2 vẫn chứa từ cấm. Sử dụng fallback.
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'tôi', 'quý khách']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Lần 2 vẫn chứa từ cấm. Sử dụng fallback.
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+WARNING:backend.orchestrator:Response chứa từ cấm: ['bạn', 'mình']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Response chứa từ cấm: ['mình', 'quý khách']. Sẽ gọi LLM lại.
+WARNING:backend.orchestrator:Lần 2 vẫn chứa từ cấm. Sử dụng fallback.
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+WARNING:backend.orchestrator:Response chứa từ cấm: ['quý khách']. Sẽ gọi LLM lại.
+ERROR:backend.vector_memory:Failed to initialize VectorMemory: ChromaDB chưa được cài đặt. Chạy: pip install chromadb
+
+==================================================
+Starting Test: C1: Price Negotiation (Market Price Suggestion)
+==================================================
+Conversation ID: 2e4d5582-328b-4901-9f3d-fafbe8267768
+Buyer ID: da70931b-de26-48fb-a426-17040f043b35
+
+
+[BUYER]: Mình muốn tìm xe tay ga Honda, tầm 25tr trở lại
+[AGENT]: Dạ bạn, mình không hiểu rõ. Anh có thể hỏi lại không ạ?
+   -> Intent: CHAT
+
+[SELLER]: Mình có Air Blade 2021 màu xanh xám, xe còn rất mới đi 15k km thôi. Giá 32tr.
+[AGENT]: Bên mình có xe từ 1 triệu đến 50 triệu tùy loại xe ạ. Anh quan tâm tầm giá nào cụ thể?
+   -> Intent: CHAT
+
+[BUYER]: Giờ làm gì nhỉ, cao quá, có bớt không?
+[AGENT]: Bên mình luôn có các ưu đãi và có thể thương lượng giá cho anh. Anh muốn xem chiếc xe nào cụ thể trước rồi anh em tính toán lại ạ?
+   -> Intent: CHAT
+
+==================================================
+Starting Test: C2: Paperwork Risk Detection
+==================================================
+Conversation ID: 71d222f6-7ce8-46b9-ad7e-6090ed819fc4
+Buyer ID: 835f1016-0237-4a40-bfe0-ddec070bbd15
+
+
+[BUYER]: Mình quan tâm xe Vision trắng đang đăng
+[AGENT]: Dạ bạn, mình không hiểu rõ. Anh có thể hỏi lại không ạ?
+   -> Intent: CHAT
+
+[SELLER]: Xe này đang chờ rút hồ sơ đi vắng không chính chủ nhé bạn
+[AGENT]: Dạ bạn, mình không hiểu rõ. Anh có thể hỏi lại không ạ?
+   -> Intent: CHAT
+
+[BUYER]: Có rủi ro gì không bạn ơi
+[AGENT]: Dạ bạn, mình không hiểu rõ. Anh có thể hỏi lại không ạ?
+   -> Intent: CHAT
+
+==================================================
+Starting Test: C3: Handle Seller Denial
+==================================================
+Conversation ID: 941abbb4-d60d-4e47-b47a-410667efafcd
+Buyer ID: 0fe4ecc7-c358-4992-919a-1244cce2bdf0
+
+
+[BUYER]: Em kết nối anh với chiếc Winner X màu đỏ nhé
+[AGENT]: Dạ anh/chị, em không hiểu rõ. Anh có thể hỏi lại không ạ?
+   -> Intent: CHAT
+
+[SELLER]: Xin lỗi nha mình không muốn qua trung gian hay cò lái gì đâu
+[AGENT]: Dạ anh/chị, em không hiểu rõ. Anh có thể hỏi lại không ạ?
+   -> Intent: CHAT
+
+[BUYER]: Ủa vậy mình tự liên hệ à bạn
+[AGENT]: Em kết nối anh với chiếc Winner X màu đỏ nhé, em có thể hỏi em xem giá cả bao nhiêu và thông tin gì khác không ạ?
+   -> Intent: CHAT

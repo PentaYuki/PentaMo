@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector
+  postgres:
+    image: pgvector/pgvector:pg15-latest
+    container_name: pentamo-postgres
+    environment:
+      POSTGRES_USER: pentamo
+      POSTGRES_PASSWORD: pentamo_secure_password_change_me
+      POSTGRES_DB: pentamo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - pentamo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pentamo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: pentamo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - pentamo-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  # FastAPI backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: pentamo-api
+    environment:
+      DATABASE_URL: postgresql://pentamo:pentamo_secure_password_change_me@postgres:5432/pentamo
+      REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      LLAMA_CPP_URL: http://host.docker.internal:8000
+      JWT_SECRET_KEY: pentamo-secret-key-change-in-production
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pentamo-network
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+  
+  # Streamlit admin dashboard
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+    container_name: pentamo-admin
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+    networks:
+      - pentamo-network
+    environment:
+      API_BASE: http://backend:8000
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    command: streamlit run frontend/admin_dashboard.py --server.port=8501 --server.address=0.0.0.0
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  pentamo-network:
+    driver: bridge

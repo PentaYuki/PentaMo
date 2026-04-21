@@ -1,0 +1,6 @@
+<svg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="240" fill="#F8F9FA"/>
+  <path d="M200 100C210 100 220 110 220 120C220 130 210 140 200 140C190 140 180 130 180 120C180 110 190 100 200 100Z" stroke="#CED4DA" stroke-width="2"/>
+  <rect x="185" y="115" width="30" height="20" rx="2" stroke="#CED4DA" stroke-width="2"/>
+  <text x="200" y="170" fill="#ADB5BD" font-family="Arial" font-size="14" text-anchor="middle">Ảnh không khả dụng</text>
+</svg>

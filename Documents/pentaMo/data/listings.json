@@ -1,0 +1,67 @@
+[
+    {
+        "id": "lst-001",
+        "brand": "Honda",
+        "model_line": "Winner X",
+        "model_year": 2023,
+        "color": "Đen",
+        "price": 34500000,
+        "province": "Hồ Chí Minh",
+        "condition": "Casi new",
+        "odometer": 500,
+        "seller_name": "Anh Minh",
+        "verified": true
+    },
+    {
+        "id": "lst-002",
+        "brand": "Yamaha",
+        "model_line": "Exciter",
+        "model_year": 2022,
+        "color": "Xanh",
+        "price": 25800000,
+        "province": "Hà Nội",
+        "condition": "Used",
+        "odometer": 5000,
+        "seller_name": "Chị Lan",
+        "verified": true
+    },
+    {
+        "id": "lst-003",
+        "brand": "Honda",
+        "model_line": "Vision",
+        "model_year": 2023,
+        "color": "Trắng",
+        "price": 26200000,
+        "province": "Hồ Chí Minh",
+        "condition": "Used",
+        "odometer": 3200,
+        "seller_name": "Anh Tuấn",
+        "verified": true
+    },
+    {
+        "id": "lst-004",
+        "brand": "Suzuki",
+        "model_line": "GSX-S125",
+        "model_year": 2021,
+        "color": "Đỏ",
+        "price": 23500000,
+        "province": "Bình Dương",
+        "condition": "Used",
+        "odometer": 8000,
+        "seller_name": "Anh Hùng",
+        "verified": false
+    },
+    {
+        "id": "lst-005",
+        "brand": "Honda",
+        "model_line": "Air Blade",
+        "model_year": 2021,
+        "color": "Xám",
+        "price": 38000000,
+        "province": "Hồ Chí Minh",
+        "condition": "Used",
+        "odometer": 12000,
+        "seller_name": "Anh Sơn",
+        "verified": true
+    }
+]

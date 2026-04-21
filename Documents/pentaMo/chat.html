@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PentaMo AI Chat - Giao dịch Thông minh</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --bg-light: #f8f9fa;
+            --text-dark: #202124;
+            --border: #dadce0;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-light);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        .header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stage-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .stage-discovery { background: #e8f0fe; color: #1967d2; }
+        .stage-matching { background: #fef7e0; color: #b06000; }
+        .stage-appointment { background: #e6f4ea; color: #137333; }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .message {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .msg-buyer {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .msg-agent {
+            align-self: flex-start;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border);
+        }
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            outline: none;
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 24px;
+            border-radius: 24px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>PentaMo AI</h2>
+        <div id="listing-info">
+            <p><strong>Đang xem:</strong> <span id="current-bike">Đang tìm...</span></p>
+        </div>
+        <hr>
+        <h3>Trạng thái</h3>
+        <div id="lead-status" class="stage-badge stage-discovery">Khám phá</div>
+    </div>
+    
+    <div class="chat-main">
+        <div class="header">
+            <div class="user-info">
+                <h3>Trợ lý AN</h3>
+                <small id="connection-status">Đang kết nối...</small>
+            </div>
+        </div>
+        
+        <div id="messages" class="messages-container">
+            <div class="message msg-agent">Chào anh/chị! Em là AN, chuyên gia xe máy. Em có thể giúp gì được cho anh/chị ạ?</div>
+        </div>
+        
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Nhập tin nhắn..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()">Gửi</button>
+        </div>
+    </div>
+
+    <script>
+        const convId = new URLSearchParams(window.location.search).get('id') || 'demo-123';
+        let currentState = { lead_stage: 'DISCOVERY' };
+
+        function updateUI(state) {
+            const statusBadge = document.getElementById('lead-status');
+            statusBadge.innerText = state.lead_stage;
+            statusBadge.className = 'stage-badge stage-' + state.lead_stage.toLowerCase();
+            
+            if (state.listing_context && state.listing_context.brand) {
+                document.getElementById('current-bike').innerText = state.listing_context.brand + ' ' + (state.listing_context.model_line || '');
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage(text, 'buyer');
+            input.value = '';
+
+            try {
+                const response = await fetch(`/api/conversations/${convId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, sender_type: 'buyer', sender_id: 'user_1' })
+                });
+                const data = await response.json();
+                addMessage(data.message, 'agent');
+                if (data.state) updateUI(data.state);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = `message msg-${sender}`;
+            div.innerText = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Mock WebSocket setup (In real impl, use Socket.io or native WS)
+        setTimeout(() => {
+            document.getElementById('connection-status').innerText = 'Trực tuyến';
+            document.getElementById('connection-status').style.color = 'green';
+        }, 1000);
+    </script>
+</body>
+</html>

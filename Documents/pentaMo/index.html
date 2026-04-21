@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pentaMO – Sàn Xe Máy AI Thông Minh</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <link rel="shortcut icon" href="/static/favicon.ico">
+</head>
+
+<body onload="initApp()">
+
+  <!-- ── TOAST ── -->
+  <div id="toast"></div>
+
+  <!-- ════════════════════════════════════
+  SPOTLIGHT MODAL (macOS style)
+════════════════════════════════════ -->
+  <div id="spotlight-overlay" class="spotlight-overlay" onclick="closeSpotlight(event)">
+    <div class="spotlight-box" onclick="event.stopPropagation()">
+      <div class="spotlight-input-row">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <input id="spotlight-input" type="text" placeholder="Tìm xe máy... (Honda Winner, Yamaha NVX...)"
+          oninput="updateSpotlightSuggestions(this.value)" onkeydown="handleSpotlightKey(event)">
+        <span class="spotlight-esc" onclick="closeSpotlight()">esc</span>
+      </div>
+
+      <div class="spotlight-suggestions" id="spotlight-suggestions">
+        <div class="spotlight-section-label">Gợi ý phổ biến</div>
+        <div class="spotlight-item" onclick="spotlightSearch('Honda Wave Alpha 2023')">
+          <div class="spotlight-item-icon">🏍️</div>
+          <div class="spotlight-item-text">
+            Honda Wave Alpha 2023
+            <div class="spotlight-item-sub">Xe số phổ thông · ~16 triệu</div>
+          </div>
+          <span class="spotlight-item-arrow">↵</span>
+        </div>
+        <div class="spotlight-item" onclick="spotlightSearch('Yamaha NVX 155')">
+          <div class="spotlight-item-icon">🛵</div>
+          <div class="spotlight-item-text">
+            Yamaha NVX 155
+            <div class="spotlight-item-sub">Xe ga thể thao · ~45 triệu</div>
+          </div>
+          <span class="spotlight-item-arrow">↵</span>
+        </div>
+        <div class="spotlight-item" onclick="spotlightSearch('Honda SH 125')">
+          <div class="spotlight-item-icon">🛵</div>
+          <div class="spotlight-item-text">
+            Honda SH 125 / 150
+            <div class="spotlight-item-sub">Xe ga cao cấp · ~60-80 triệu</div>
+          </div>
+          <span class="spotlight-item-arrow">↵</span>
+        </div>
+        <div class="spotlight-item" onclick="spotlightSearch('xe tay ga duoi 30 trieu')">
+          <div class="spotlight-item-icon">💸</div>
+          <div class="spotlight-item-text">
+            Xe tay ga dưới 30 triệu
+            <div class="spotlight-item-sub">Tìm theo ngân sách</div>
+          </div>
+          <span class="spotlight-item-arrow">↵</span>
+        </div>
+        <div class="spotlight-section-label" style="margin-top:6px;">Chức năng nhanh</div>
+        <div class="spotlight-item" onclick="closeSpotlight(); go('dashboard','listings')">
+          <div class="spotlight-item-icon">📋</div>
+          <div class="spotlight-item-text">
+            Đăng bán xe của bạn
+            <div class="spotlight-item-sub">Tiếp cận hàng nghìn người mua</div>
+          </div>
+        </div>
+        <div class="spotlight-item" onclick="closeSpotlight(); go('login')">
+          <div class="spotlight-item-icon">👤</div>
+          <div class="spotlight-item-text">
+            Đăng nhập / Đăng ký
+          </div>
+        </div>
+      </div>
+
+      <div class="spotlight-footer">
+        <span><kbd>↵</kbd> Tìm kiếm</span>
+        <span><kbd>↑</kbd><kbd>↓</kbd> Điều hướng</span>
+        <span><kbd>esc</kbd> Đóng</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+  PAGE: HOME
+════════════════════════════════════ -->
+  <div id="page-home" class="page active">
+    <nav class="home-nav">
+      <div id="home-auth-links" style="display:flex; gap:10px;">
+        <a onclick="go('login')">Đăng nhập</a>
+        <a onclick="go('register')" class="btn btn-primary" style="padding:7px 18px;">Đăng ký</a>
+      </div>
+      <div id="home-user-info" style="display:none; gap:12px; align-items:center;">
+        <span id="home-username" style="font-size:14px; color:var(--muted);">Chào, User</span>
+        <div class="avatar" style="background:var(--g-blue);color:#fff;" onclick="go('dashboard')">U</div>
+      </div>
+    </nav>
+
+    <!-- Floating orbs background -->
+    <div class="orbit-canvas" id="orbs"></div>
+
+    <div class="home-center">
+      <div class="home-logo">
+        <span>p</span><span>e</span><span>n</span><span>t</span><span>a</span><span>M</span><span>O</span>
+      </div>
+      <div class="home-subtitle">Sàn giao dịch xe máy thông minh · Powered by AI</div>
+
+      <!-- Spotlight trigger (thay thế search box) -->
+      <div class="spotlight-trigger" onclick="openSpotlight()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <span class="trigger-placeholder">Tìm xe máy...</span>
+        <span class="trigger-kbd">⌘K</span>
+      </div>
+
+      <div class="search-buttons">
+        <button class="btn btn-primary" onclick="openSpotlight()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          Tìm xe
+        </button>
+        <button class="btn btn-outline" onclick="go('dashboard', 'listings')">📋 Đăng bán</button>
+      </div>
+
+      <div class="home-links">
+        <a onclick="go('dashboard', 'search')">🏍️ Mua xe</a>
+        <a onclick="go('dashboard', 'listings')">🏷️ Bán xe</a>
+        <a id="home-admin-link" style="display:none;" onclick="go('admin')">⚙️ Admin</a>
+      </div>
+    </div>
+
+    <div style="position:absolute;bottom:28px;width:100%;text-align:center;font-size:13px;color:var(--muted);">
+      © 2026 pentaMO · <span style="color:var(--g-blue)">Hà Nội</span> · <span style="color:var(--g-red)">HCM</span> ·
+      <span style="color:var(--g-yellow)">Đà Nẵng</span> · <span style="color:var(--g-green)">34 tỉnh thành</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+  PAGE: LOGIN
+════════════════════════════════════ -->
+  <div id="page-login" class="page auth-page">
+    <div class="logo-sm" style="margin-bottom:24px;" onclick="go('home')">
+      <span>p</span><span>e</span><span>n</span><span>t</span><span>a</span><span>M</span><span>O</span>
+    </div>
+    <div class="auth-card">
+      <h2>Chào mừng trở lại</h2>
+      <p style="color:var(--muted); margin-bottom:28px; font-size:14px;">Đăng nhập vào tài khoản của bạn</p>
+      <div class="form-group">
+        <label>Tên đăng nhập</label>
+        <input id="login-username" type="text" placeholder="admin / buyer / seller">
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu</label>
+        <input id="login-password" type="password" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter') handleLogin()">
+      </div>
+      <button class="btn btn-primary" style="width:100%" id="btn-login-exec" onclick="handleLogin()">Đăng nhập</button>
+      <div style="margin-top:24px; text-align:center; font-size:13px; color:var(--muted);">
+        Chưa có tài khoản? <a onclick="go('register')" style="color:var(--g-blue); cursor:pointer;">Đăng ký ngay</a>
+        <br><br>
+        <small>Demo: admin / PentaMo@Admin123</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+  PAGE: REGISTER
+════════════════════════════════════ -->
+  <div id="page-register" class="page auth-page">
+    <div class="logo-sm" style="margin-bottom:24px;" onclick="go('home')">
+      <span>p</span><span>e</span><span>n</span><span>t</span><span>a</span><span>M</span><span>O</span>
+    </div>
+    <div class="auth-card">
+      <h2>Tạo tài khoản</h2>
+      <p style="color:var(--muted); margin-bottom:28px; font-size:14px;">Tham gia cộng đồng mua bán xe máy</p>
+      <div class="form-group">
+        <label>Họ và tên</label>
+        <input type="text" id="reg-name" placeholder="Nguyễn Văn Hải">
+      </div>
+      <div class="form-group">
+        <label>Số điện thoại</label>
+        <input type="tel" id="reg-phone" placeholder="0912345678">
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu</label>
+        <input type="password" id="reg-password" placeholder="Nhập mật khẩu của bạn">
+      </div>
+      <button class="btn btn-primary" style="width:100%" id="btn-reg-exec" onclick="handleRegister()">Tạo tài khoản & Đăng nhập</button>
+      <div style="margin-top:24px; text-align:center; font-size:13px; color:var(--muted);">
+        Đã có tài khoản? <a onclick="go('login')" style="color:var(--g-blue); cursor:pointer;">Đăng nhập demo</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+  PAGE: USER DASHBOARD
+════════════════════════════════════ -->
+  <div id="page-dashboard" class="page">
+    <div class="topnav">
+      <div class="logo-sm" onclick="go('home')">
+        <span>p</span><span>e</span><span>n</span><span>t</span><span>a</span><span>M</span><span>O</span>
+      </div>
+      <nav id="topnav-links">
+        <a class="active" id="top-dash-home" onclick="showSection('dash-home')">Tổng quan</a>
+        <a id="top-search" onclick="showSection('search')">Mua xe</a>
+        <a id="top-listings" onclick="showSection('listings')">Bán xe</a>
+        <a id="top-profile" onclick="showSection('profile')">Hồ sơ</a>
+      </nav>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <!-- Spotlight search icon -->
+        <button class="topnav-search-btn" onclick="openSpotlight()" title="Tìm kiếm (⌘K)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+        </button>
+        <div id="dash-user-name" style="font-size:14px; color:var(--muted);">User</div>
+        <div class="avatar" style="background:var(--g-blue);color:#fff;" id="dash-user-avatar">ND</div>
+      </div>
+    </div>
+
+    <div class="dash-wrapper">
+      <div class="sidebar">
+        <div class="sect-label">Chính</div>
+        <a id="side-dash-home" class="active" onclick="showSection('dash-home')">
+          <span class="ico">🏠</span> Bảng điều khiển
+        </a>
+        <a id="side-search" onclick="showSection('search')">
+          <span class="ico">🔍</span> Tìm xe máy
+        </a>
+        <a id="side-listings" onclick="showSection('listings')">
+          <span class="ico">🏷️</span> Tin đăng của tôi
+        </a>
+        <a id="side-saved-listings" onclick="showSection('saved-listings')">
+          <span class="ico">❤️</span> Tin đã lưu (Mua)
+        </a>
+        <a id="side-chat-list" onclick="showSection('chat-list')">
+          <span class="ico">💬</span> Tin nhắn
+        </a>
+        <a id="side-appointments" onclick="showSection('appointments')">
+          <span class="ico">📅</span> Lịch hẹn
+        </a>
+        <div class="sect-label" style="margin-top:8px;">Bán xe</div>
+        <a id="side-my-listings" onclick="showSection('listings')">
+          <span class="ico">📋</span> Tin của tôi (Bán)
+        </a>
+        <a id="side-post-listing" onclick="showModal('modal-post-listing')">
+          <span class="ico">➕</span> Đăng tin mới
+        </a>
+        <div class="sect-label" style="margin-top:8px;">Tài khoản</div>
+        <a onclick="showSection('profile')"><span class="ico">👤</span> Hồ sơ cá nhân</a>
+        <a id="side-admin-link" style="display:none;" onclick="go('admin')"><span class="ico">⚙️</span> Quản trị</a>
+        <a id="side-switch-to-buyer" style="display:none;" onclick="go('dashboard', 'search')"><span class="ico">🛒</span> Mua xe</a>
+        
+        <div class="sidebar-divider"></div>
+        <a onclick="handleLogout()" class="sidebar-logout">
+          <span class="ico">🚪</span> Đăng xuất
+        </a>
+      </div>
+
+      <div class="main-content">
+
+        <!-- ── Section: Dashboard Home ── -->
+        <div id="sect-dash-home" class="dash-sect">
+          <div class="page-title">Chào mừng trở lại!</div>
+          <div class="stats-grid" style="margin-bottom:28px;">
+            <div class="card stat-card" style="border-left: 4px solid var(--g-blue);">
+              <div class="label">Tổng xe đang bán</div>
+              <div class="value" id="stat-total-listings">--</div>
+            </div>
+            <div class="card stat-card" style="border-left: 4px solid var(--g-green);">
+              <div class="label">Lượt xem tin</div>
+              <div class="value">1.4k</div>
+            </div>
+            <div class="card stat-card" style="border-left: 4px solid var(--g-yellow);">
+              <div class="label">Khách hàng quan tâm</div>
+              <div class="value">28</div>
+            </div>
+            <div class="card stat-card" style="border-left: 4px solid var(--g-red);">
+              <div class="label">Tin nhắn mới</div>
+              <div class="value">3</div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="font-size:18px; font-weight:700;">Hàng mới về (Toàn quốc)</h3>
+            <a onclick="showSection('search')" style="font-size:13px; color:var(--g-blue); cursor:pointer;">Xem tất cả</a>
+          </div>
+          <div id="new-arrivals-container" class="listings-grid">
+             <div style="padding:20px 0; color:var(--muted);">Đang tải xe mới nhất...</div>
+          </div>
+        </div>
+
+        <!-- ── Section: Search ── -->
+        <div id="sect-search" class="dash-sect">
+          <div class="page-title">Tìm kiếm xe máy</div>
+
+          <div style="display:flex;gap:10px;margin-bottom:20px;">
+            <div class="search-box" style="flex:1;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <input type="text" id="dash-search-input" placeholder="Honda Winner X, xe tay ga dưới 30tr..."
+                onkeydown="if(event.key==='Enter')executeSearch()">
+            </div>
+            <button class="btn btn-primary" onclick="executeSearch()">Tìm</button>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 260px 1fr; gap:18px;">
+            <!-- Filter panel -->
+            <div class="card" style="height:fit-content; padding:18px;">
+              <h3 style="margin-bottom:14px; font-size:15px;">Bộ lọc</h3>
+              <div class="form-group">
+                <label>Hãng xe</label>
+                <select id="filter-brand">
+                  <option value="">Tất cả</option>
+                  <option>Honda</option>
+                  <option>Yamaha</option>
+                  <option>Suzuki</option>
+                  <option>SYM</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Giá tối đa (VNĐ)</label>
+                <input type="number" id="filter-price" placeholder="0">
+              </div>
+              <button class="btn btn-primary" style="width:100%;" onclick="executeSearch()">Áp dụng</button>
+            </div>
+
+            <!-- Results -->
+            <div class="results-list" id="results-container">
+              <div style="padding:20px 0; font-size:14px; color:var(--muted);">
+                Dùng thanh tìm kiếm hoặc hỏi AI bên dưới để tìm xe phù hợp.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Section: My Listings ── -->
+        <div id="sect-listings" class="dash-sect" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div class="page-title" style="margin-bottom:0;">Tin đăng của tôi</div>
+            <button class="btn btn-primary" onclick="showModal('modal-post-listing')">+ Đăng tin mới</button>
+          </div>
+          <div id="my-listings-container" class="listings-grid">
+            <div class="card" style="text-align:center; padding:40px; grid-column:1/-1;">
+              <div style="font-size:32px; margin-bottom:12px;">🏍️</div>
+              <div style="font-size:15px; margin-bottom:8px;">Bạn chưa có tin đăng nào</div>
+              <div style="font-size:13px; color:var(--muted);">Hãy đăng tin để tiếp cận hàng nghìn người mua!</div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ── Section: Saved Listings ── -->
+        <div id="sect-saved-listings" class="dash-sect" style="display:none;">
+          <div class="page-title">Tin đã lưu của bạn</div>
+          <div id="saved-listings-container" class="listings-grid">
+            <div style="padding:24px; color:var(--muted);">Đang tải danh sách đã lưu...</div>
+          </div>
+        </div>
+
+        <!-- ── Section: Chat List ── -->
+        <div id="sect-chat-list" class="dash-sect" style="display:none;">
+          <div class="page-title">Tin nhắn của bạn</div>
+          <div id="chat-list-container" class="card-list" style="display:flex; flex-direction:column; gap:12px;">
+            <div style="padding:24px; color:var(--muted);">Đang tải tin nhắn...</div>
+          </div>
+        </div>
+
+        <!-- ── Section: Appointments ── -->
+        <div id="sect-appointments" class="dash-sect" style="display:none;">
+          <div class="page-title">Quản lý lịch hẹn</div>
+          <div id="appointments-container" class="card-list" style="display:flex; flex-direction:column; gap:12px;">
+            <div style="padding:24px; color:var(--muted);">Đang tải lịch hẹn...</div>
+          </div>
+        </div>
+
+        <!-- ── Section: Profile ── -->
+        <div id="sect-profile" class="dash-sect" style="display:none;">
+          <div class="page-title">Hồ sơ cá nhân</div>
+          <div class="card" style="max-width:480px;">
+            <div style="display:flex; gap:20px; align-items:center;">
+              <div class="avatar" style="width:64px; height:64px; font-size:24px; background:var(--g-blue); color:#fff;"
+                id="profile-avatar">U</div>
+              <div>
+                <h3 id="profile-name" style="margin-bottom:4px;">User Name</h3>
+                <p id="profile-role" style="color:var(--muted); font-size:14px;">Buyer / Seller</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.main-content -->
+    </div><!-- /.dash-wrapper -->
+
+    <!-- ── AI Chat Widget ── -->
+    <div class="chat-widget">
+      <div id="main-chat-panel" class="chat-panel">
+        <div class="chat-header">
+          <svg width="16" height="16" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="7" cy="18" r="5.5" stroke="white" stroke-width="1.8" />
+            <circle cx="29" cy="18" r="5.5" stroke="white" stroke-width="1.8" />
+            <path d="M7 18 L12 8 L21 7 L29 18" stroke="white" stroke-width="1.8" stroke-linejoin="round" fill="none" />
+            <path d="M12 8 C15 5 19 5 21 7" stroke="white" stroke-width="1.8" fill="none" />
+            <path d="M25 11 L29 18" stroke="white" stroke-width="1.8" fill="none" />
+            <path d="M23 9 L27 6" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none" />
+            <path d="M27 6 L30 8" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none" />
+          </svg>
+          pentaMO AI · Trợ lý thông minh
+          <div class="chat-header-status">
+            <div class="status-dot"></div> Online
+          </div>
+        </div>
+        <div id="chat-msgs" class="chat-messages">
+          <div class="chat-msg bot">Chào bạn! Mình là AN - trợ lý AI pentaMO. Mình có thể giúp bạn tìm xe, so sánh giá
+            và giải đáp thắc mắc. 🏍️</div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Hỏi AI về xe máy..."
+            onkeydown="if(event.key==='Enter')sendChatMessage()">
+          <button class="chat-send" id="chat-send-btn" onclick="sendChatMessage()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="m22 2-7 20-4-9-9-4Z" />
+              <path d="M22 2 11 13" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pentagon bubble with spinner ring -->
+      <div class="chat-bubble-wrap" id="chat-bubble-wrap">
+        <div class="chat-spinner-ring"></div>
+        <div class="chat-bubble" onclick="toggleChatPane()">
+          <!-- Motorcycle SVG — side view -->
+          <svg class="bike-svg" viewBox="0 0 40 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Rear wheel -->
+            <circle cx="7.5" cy="19" r="6" stroke="white" stroke-width="2" />
+            <!-- Front wheel -->
+            <circle cx="32.5" cy="19" r="6" stroke="white" stroke-width="2" />
+            <!-- Main frame -->
+            <path d="M7.5 19 L13 9 L22 8 L32.5 19" stroke="white" stroke-width="2" stroke-linejoin="round"
+              fill="none" />
+            <!-- Seat curve -->
+            <path d="M13 9 C16 6 20 6 22 8" stroke="white" stroke-width="2" fill="none" />
+            <!-- Front fork -->
+            <path d="M27.5 13 L32.5 19" stroke="white" stroke-width="2" fill="none" />
+            <!-- Handlebar -->
+            <path d="M25 10 L29 7" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" />
+            <path d="M29 7 L32 9" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" />
+            <!-- Engine body hint -->
+            <path d="M14.5 13.5 L21 13.5 L23 17 L14.5 17 Z" stroke="white" stroke-width="1.2" fill="none"
+              opacity="0.5" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+  PAGE: ADMIN DASHBOARD
+════════════════════════════════════ -->
+  <div id="page-admin" class="page">
+    <div class="topnav">
+      <div class="logo-sm" onclick="go('home')">
+        <span>p</span><span>e</span><span>n</span><span>t</span><span>a</span><span>M</span><span>O</span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <span class="badge" style="background:var(--g-blue); color:#fff; font-size:11px;">STAFF MODE</span>
+        <div class="avatar" style="background:var(--g-yellow);color:#7a4f00;">AD</div>
+      </div>
+    </div>
+
+    <div class="dash-wrapper">
+      <div class="sidebar">
+        <div class="sect-label">Giám sát</div>
+        <a id="side-admin-overview" class="active" onclick="showAdminSect('admin-overview', event); loadAdminOverview()"><span class="ico">📊</span> Tổng quan</a>
+        <a id="side-admin-users" onclick="showAdminSect('admin-users', event); loadAdminUsers()"><span class="ico">👥</span> Người dùng</a>
+        <a id="side-admin-listings" onclick="showAdminSect('admin-listings', event); loadAdminListings()"><span class="ico">🏷️</span> Kiểm duyệt</a>
+        <a id="side-admin-risks" onclick="showAdminSect('admin-risks', event)"><span class="ico">⚠️</span> Rủi ro</a>
+        <div class="sect-label" style="margin-top:8px;">Hệ thống</div>
+        <a id="side-admin-config" onclick="showAdminSect('admin-config', event)"><span class="ico">⚙️</span> Cấu hình kỹ thuật</a>
+        <a id="side-admin-analytics" onclick="showAdminSect('admin-analytics', event); loadAdminAnalytics()"><span class="ico">📈</span> Phân tích AI</a>
+        <a id="side-admin-logs" onclick="showAdminSect('admin-logs', event); loadAdminTraces()"><span class="ico">📋</span> AI Logs</a>
+        
+        <div style="padding:10px; margin-top:10px; border-top:1px solid rgba(0,0,0,0.05);">
+          <a class="btn btn-primary" style="width:100%; border-radius:12px; justify-content:center; text-decoration:none;" onclick="go('dashboard', 'search')">
+             🛒 Chế độ Người mua
+          </a>
+        </div>
+        
+        <div class="sidebar-divider"></div>
+        <a onclick="handleLogout()" class="sidebar-logout">
+          <span class="ico">🚪</span> Đăng xuất
+        </a>
+      </div>
+
+      <div class="main-content">
+        <!-- Overview -->
+        <div id="admin-overview">
+          <div class="page-title">Quản trị hệ thống</div>
+          <div class="stats-grid">
+            <div class="stat-card card">
+              <div class="label">Tổng người dùng</div>
+              <div id="adm-total-users" class="value" style="color:var(--g-blue);">--</div>
+            </div>
+            <div class="stat-card card">
+              <div class="label">Tin chờ duyệt</div>
+              <div id="adm-pending-listings" class="value" style="color:var(--g-red);">--</div>
+            </div>
+            <div class="stat-card card">
+              <div class="label">Tổng tin đăng</div>
+              <div id="adm-total-listings" class="value" style="color:var(--g-yellow);">--</div>
+            </div>
+            <div class="stat-card card">
+              <div class="label">Cuộc hội thoại</div>
+              <div id="adm-total-convs" class="value" style="color:var(--g-green);">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users -->
+        <div id="admin-users" style="display:none;">
+          <div class="page-title">Quản lý người dùng</div>
+          <div class="card" style="padding:0; overflow:hidden;">
+            <table style="width:100%; border-collapse:collapse;">
+              <thead>
+                <tr style="background:var(--bg);">
+                  <th style="padding:14px 20px; font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted);">Người dùng</th>
+                  <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted);">Xác thực</th>
+                  <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted);">Vai trò</th>
+                  <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted);">Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <!-- Data loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Listings verification -->
+        <div id="admin-listings" style="display:none;">
+          <div class="page-title">Kiểm duyệt tin đăng</div>
+          <div id="admin-listings-container">
+            <!-- Cards loaded via JS -->
+          </div>
+        </div>
+
+        <!-- Risks -->
+        <div id="admin-risks" style="display:none;">
+          <div class="page-title">Cảnh báo rủi ro</div>
+          <div class="card" style="border-left:3px solid var(--g-red);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:700; color:var(--g-red); margin-bottom:4px;">Phát hiện trùng lặp nâng cao</div>
+                <div style="font-size:13px; color:var(--muted);">1 tin đăng có ảnh trùng khớp 95% với tin đã bị xóa trước đó.</div>
+              </div>
+              <button class="btn btn-outline" style="padding:4px 12px; font-size:12px;">Chi tiết</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics -->
+        <div id="admin-analytics" style="display:none;">
+          <div class="page-title">Phân tích & Đánh giá AI</div>
+          <div class="stats-grid">
+            <div class="stat-card card">
+              <div class="label">Cache Hit Rate</div>
+              <div id="ana-hit-rate" class="value" style="color:var(--g-blue);">0%</div>
+            </div>
+            <div class="stat-card card">
+              <div class="label">Phản hồi (+)</div>
+              <div id="ana-pos-feedback" class="value" style="color:var(--g-green);">0</div>
+            </div>
+            <div class="stat-card card">
+              <div class="label">Phản hồi (-)</div>
+              <div id="ana-neg-feedback" class="value" style="color:var(--g-red);">0</div>
+            </div>
+            <div class="stat-card card">
+              <div class="label">Tổng yêu cầu (Live)</div>
+              <div id="ana-total-req" class="value" style="color:var(--muted);">0</div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:15px;">Chi tiết hiệu năng (Live)</h3>
+            <div style="margin-bottom:15px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                <span>Cache Hits (FAISS)</span>
+                <span id="ana-hits-count">0</span>
+              </div>
+              <div style="height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                <div id="ana-hits-bar" style="height:100%; width:0%; background:var(--g-blue); transition:width 0.5s;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                <span>LLM Generations</span>
+                <span id="ana-llm-count">0</span>
+              </div>
+              <div style="height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                <div id="ana-llm-bar" style="height:100%; width:0%; background:var(--g-yellow); transition:width 0.5s;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:15px;">Nhật ký Luyện tập AI (FAISS Update)</h3>
+            <div id="learning-log" style="font-size:13px; color:var(--muted);">Đang tải nhật ký...</div>
+          </div>
+        </div>
+
+        <!-- AI Logs -->
+        <div id="admin-logs" style="display:none;">
+          <div class="page-title">AI Logs (Trace)</div>
+          <div class="card" style="padding:0; overflow:hidden;">
+            <div id="trace-list" style="padding:20px; color:var(--muted);">Đang tải log...</div>
+          </div>
+          <div id="trace-detail-view" style="display:none; margin-top:16px;">
+            <div style="font-size:13px; margin-bottom:8px; color:var(--muted);">
+              Chi tiết: <strong id="viewing-conv-id"></strong>
+            </div>
+            <pre id="trace-content" style="background:var(--bg); padding:12px; border-radius:6px; overflow:auto; max-height:400px; font-size:12px;"></pre>
+          </div>
+        </div>
+
+        <div id="admin-config" style="display:none;">
+          <div class="page-title">Cấu hình kỹ thuật</div>
+          <div class="card" style="max-width:680px;">
+            <h3 style="margin-bottom:20px;">Cơ sở dữ liệu & AI</h3>
+            <div class="form-group">
+              <label>DATABASE_URL (PostgreSQL/SQLite)</label>
+              <input type="text" id="cfg-db-url" value="sqlite:///./pentamo.db">
+            </div>
+            <div class="form-group">
+              <label>OLLAMA_MODEL</label>
+              <input type="text" id="cfg-ai-model" value="arce-v3:latest">
+            </div>
+            <div style="margin-top:16px; padding:12px 16px; background:rgba(234,67,53,0.07); border-radius:8px; border:1px solid rgba(234,67,53,0.3);">
+              <p style="color:var(--g-red); font-size:12px; font-weight:600;">⚠️ Thay đổi sẽ khởi động lại hệ thống core.</p>
+            </div>
+            <button class="btn" style="margin-top:20px; background:var(--g-red); color:#fff;" onclick="saveAdminConfig()">Lưu cấu hình</button>
+          </div>
+        </div>
+      </div><!-- /.main-content -->
+    </div><!-- /.dash-wrapper -->
+  </div>
+
+  <!-- ════════════════════════════════════
+  MODAL: Post New Listing
+════════════════════════════════════ -->
+  <div id="modal-post-listing" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:780px;">
+      <div class="chat-header" style="justify-content:space-between; display:flex; padding:14px 20px;">
+        <span>📋 Đăng tin bán xe mới</span>
+        <span style="cursor:pointer; opacity:0.8;" onclick="hideModal('modal-post-listing')">✕</span>
+      </div>
+      <div style="padding:24px; display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+        <!-- Left: Vehicle Info -->
+        <div>
+          <div class="form-group">
+            <label>Hãng xe</label>
+            <input type="text" id="ls-brand" placeholder="Honda">
+          </div>
+          <div class="form-group">
+            <label>Dòng xe & Năm</label>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="ls-line" placeholder="Vision" style="flex:2;">
+              <input type="number" id="ls-year" placeholder="2023" style="flex:1;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Giá bán (VNĐ)</label>
+            <input type="text" id="ls-price" placeholder="30.000.000" oninput="formatPriceInput(this)">
+          </div>
+          <div class="form-group">
+            <label>Phương thức bán</label>
+            <select id="ls-sale-method" style="width:100%;" onchange="toggleAuctionFields()">
+              <option value="NORMAL">Bán thẳng (Tiền về ngay)</option>
+              <option value="AUCTION">Bán đấu giá (Giá tối ưu)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Màu sắc & Tình trạng</label>
+            <input type="text" id="ls-color" placeholder="Đỏ thẫm, Mới 95%...">
+          </div>
+          <div class="form-group">
+            <label>Tỉnh/Thành phố</label>
+            <input type="text" id="ls-province" list="provinces-list" placeholder="Chọn hoặc gõ để tìm...">
+            <datalist id="provinces-list">
+              <!-- Dynamically loaded -->
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label>Địa chỉ chi tiết</label>
+            <input type="text" id="ls-address" placeholder="Số nhà, đường, phường, quận...">
+          </div>
+        </div>
+        <!-- Right: Photos & OCR -->
+        <div>
+          <div class="sect-label" style="margin-bottom:10px;">Ảnh xe (4 góc)</div>
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;">
+            <div class="upload-slot" id="slot-front" onclick="document.getElementById('file-front').click()">
+              <div class="preview-img"></div>
+              <span>📸 Trước</span>
+              <input type="file" id="file-front" hidden accept="image/*"
+                onchange="previewUpload('file-front', 'slot-front')">
+            </div>
+            <div class="upload-slot" id="slot-back" onclick="document.getElementById('file-back').click()">
+              <div class="preview-img"></div>
+              <span>📸 Sau</span>
+              <input type="file" id="file-back" hidden accept="image/*"
+                onchange="previewUpload('file-back', 'slot-back')">
+            </div>
+            <div class="upload-slot" id="slot-left" onclick="document.getElementById('file-left').click()">
+              <div class="preview-img"></div>
+              <span>📸 Trái</span>
+              <input type="file" id="file-left" hidden accept="image/*"
+                onchange="previewUpload('file-left', 'slot-left')">
+            </div>
+            <div class="upload-slot" id="slot-right" onclick="document.getElementById('file-right').click()">
+              <div class="preview-img"></div>
+              <span>📸 Phải</span>
+              <input type="file" id="file-right" hidden accept="image/*"
+                onchange="previewUpload('file-right', 'slot-right')">
+            </div>
+          </div>
+          <div style="font-size:11px; color:var(--muted); margin-bottom:14px; text-align:center;">Trước · Sau · Trái ·
+            Phải — AI sẽ xác thực ảnh</div>
+          <!-- OCR removed per user request -->
+          <div style="font-size:12px; color:var(--muted); padding:20px; border:1px solid var(--border); border-radius:8px; text-align:center;">
+             Tính năng OCR giấy tờ xe đang bảo trì.
+          </div>
+        </div>
+      </div>
+      <div
+        style="padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <label style="font-size:13px; color:var(--muted); display:flex; gap:6px; align-items:center; cursor:pointer;">
+          <input type="checkbox"> Xe chính chủ / Đầy đủ giấy tờ
+        </label>
+        <button class="btn btn-primary" onclick="submitListing()">Xác nhận Đăng tin</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+  MODAL: Listing Detail View (4 angles)
+  ════════════════════════════════════ -->
+  <div id="modal-listing-detail" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:880px;">
+      <div class="chat-header" style="justify-content:space-between; display:flex; padding:14px 20px;">
+        <span id="dt-title">🏍️ Chi tiết xe</span>
+        <span style="cursor:pointer; opacity:0.8;" onclick="hideModal('modal-listing-detail')">✕</span>
+      </div>
+      <div style="padding:24px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:24px;">
+           <img id="dt-img-front" src="" alt="Trước" style="width:100%; border-radius:12px; aspect-ratio:16/10; object-fit:cover; border:1px solid var(--border);">
+           <img id="dt-img-back" src="" alt="Sau" style="width:100%; border-radius:12px; aspect-ratio:16/10; object-fit:cover; border:1px solid var(--border);">
+           <img id="dt-img-left" src="" alt="Trái" style="width:100%; border-radius:12px; aspect-ratio:16/10; object-fit:cover; border:1px solid var(--border);">
+           <img id="dt-img-right" src="" alt="Phải" style="width:100%; border-radius:12px; aspect-ratio:16/10; object-fit:cover; border:1px solid var(--border);">
+        </div>
+        <div class="card" style="background:var(--bg); border:none; margin-bottom:24px;">
+           <div id="dt-info" style="font-size:15px; color:var(--muted); line-height:1.6;">
+              <!-- Dynamic Details -->
+           </div>
+        </div>
+
+        <!-- Detail Interactions -->
+        <div id="dt-interactions" style="display:flex; gap:12px;">
+          <button class="btn btn-primary" style="flex:1;" onclick="startDirectChat()">
+            💬 Nhắn tin cho người bán
+          </button>
+          <button class="btn btn-outline" style="flex:1;" onclick="showModal('modal-book-appointment')">
+            📅 Đặt lịch xem xe
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+  MODAL: Book Appointment
+  ════════════════════════════════════ -->
+  <div id="modal-book-appointment" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:480px;">
+      <div class="chat-header" style="justify-content:space-between; display:flex; padding:14px 20px;">
+        <span>📅 Đặt lịch hẹn xem xe</span>
+        <span style="cursor:pointer; opacity:0.8;" onclick="hideModal('modal-book-appointment')">✕</span>
+      </div>
+      <div style="padding:24px;">
+        <div class="form-group">
+          <label>Ngày giờ mong muốn</label>
+          <input type="datetime-local" id="apt-date" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Địa điểm gặp mặt</label>
+          <input type="text" id="apt-location" placeholder="Ví dụ: Tại tiệm hoặc quán cafe..." class="form-control">
+        </div>
+        <button class="btn btn-primary" style="width:100%; margin-top:16px;" onclick="submitAppointment()">
+          Xác nhận đặt lịch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+  JAVASCRIPT
+════════════════════════════════════ -->
+  <script>
+    // ── Global State ──
+    let currentUser = null;
+    let currentToken = null;
+    let currentConversationId = null;
+
+    // ── App Init ──
+    async function initApp() {
+      generateOrbs();
+
+      // Keyboard shortcut Cmd+K / Ctrl+K
+      document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          openSpotlight();
+        }
+      });
+
+      currentToken = localStorage.getItem('pentamo_token');
+      const userStr = localStorage.getItem('pentamo_user');
+
+      if (currentToken && userStr) {
+        // Verify token with backend
+        try {
+          const resp = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+          });
+          if (!resp.ok) throw new Error('Expired');
+          
+          currentUser = JSON.parse(userStr);
+          updateUIForUser();
+          const [page, section] = window.location.hash.replace('#', '').split('/');
+          if (page) go(page, section);
+        } catch (e) {
+          console.warn('Phiên làm việc hết hạn:', e);
+          handleLogout(false);
+          go('login');
+        }
+      } else {
+        handleLogout(false);
+      }
+    }
+
+    // ── Navigation ──
+    function go(page, section = null) {
+      const protectedPages = ['dashboard', 'admin'];
+      if (protectedPages.includes(page) && !currentToken) {
+        showToast('Vui lòng đăng nhập để tiếp tục');
+        go('login');
+        return;
+      }
+      
+      const role = (currentUser?.role || '').toUpperCase();
+      if (page === 'admin' && role !== 'ADMIN') {
+        showToast('Bạn không có quyền truy cập trang quản trị');
+        go('dashboard');
+        return;
+      }
+
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const targetPage = document.getElementById('page-' + page);
+      if (targetPage) {
+        targetPage.classList.add('active');
+        window.location.hash = section ? `${page}/${section}` : page;
+        window.scrollTo(0, 0);
+      }
+
+      if (page === 'dashboard' && section) showSection(section);
+      else if (page === 'dashboard') showSection('dash-home');
+      else if (page === 'admin') {
+        showAdminSect('admin-overview');
+        loadAdminOverview();
+      }
+    }
+
+    function showSection(sectId, updateHash = true) {
+      document.querySelectorAll('.dash-sect').forEach(s => s.style.display = 'none');
+      const target = document.getElementById('sect-' + sectId);
+      if (target) target.style.display = 'block';
+      document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+      const sideLink = document.getElementById('side-' + sectId);
+      if (sideLink) sideLink.classList.add('active');
+
+      document.querySelectorAll('.topnav nav a').forEach(a => a.classList.remove('active'));
+      const topLink = document.getElementById('top-' + sectId);
+      if (topLink) topLink.classList.add('active');
+
+      // Update hash if in dashboard
+      if (updateHash && window.location.hash.startsWith('#dashboard')) {
+        window.location.hash = `dashboard/${sectId}`;
+      }
+
+      if (sectId === 'dash-home') loadNewArrivals();
+      if (sectId === 'listings') loadMyListings();
+      if (sectId === 'saved-listings') loadSavedListings();
+      if (sectId === 'chat-list') loadChatList();
+      if (sectId === 'appointments') loadAppointments();
+      if (sectId === 'search') {
+        const results = document.getElementById('results-container');
+        if (results && (results.innerHTML.includes('Đang tải') || results.innerHTML === '' || results.innerHTML.includes('Dùng thanh tìm kiếm'))) {
+           executeSearch('');
+        }
+      }
+    }
+
+    // ── Spotlight Search ──
+    function openSpotlight() {
+      const overlay = document.getElementById('spotlight-overlay');
+      overlay.classList.add('open');
+      setTimeout(() => document.getElementById('spotlight-input').focus(), 50);
+    }
+
+    function closeSpotlight(e) {
+      if (e && e.target !== document.getElementById('spotlight-overlay')) return;
+      document.getElementById('spotlight-overlay').classList.remove('open');
+      document.getElementById('spotlight-input').value = '';
+      resetSpotlightSuggestions();
+    }
+
+    function handleSpotlightKey(e) {
+      if (e.key === 'Escape') {
+        document.getElementById('spotlight-overlay').classList.remove('open');
+        document.getElementById('spotlight-input').value = '';
+        resetSpotlightSuggestions();
+      }
+      if (e.key === 'Enter') {
+        const val = document.getElementById('spotlight-input').value.trim();
+        if (val) spotlightSearch(val);
+      }
+    }
+
+    function spotlightSearch(query) {
+      document.getElementById('spotlight-overlay').classList.remove('open');
+      localStorage.setItem('last_search', query);
+      if (currentToken) {
+        go('dashboard', 'search');
+        setTimeout(() => {
+          const inp = document.getElementById('dash-search-input');
+          if (inp) inp.value = query;
+          executeSearch(query);
+        }, 150);
+      } else {
+        go('login');
+      }
+    }
+
+    function updateSpotlightSuggestions(val) {
+      if (!val.trim()) {
+        resetSpotlightSuggestions();
+        return;
+      }
+      // Simple: show a "search for X" item at top
+      const suggestions = document.getElementById('spotlight-suggestions');
+      const firstItem = suggestions.querySelector('.spotlight-item');
+      if (firstItem) {
+        firstItem.querySelector('.spotlight-item-text').innerHTML =
+          `Tìm "<strong>${val}</strong>"<div class="spotlight-item-sub">Tìm kiếm trên toàn bộ hệ thống</div>`;
+        firstItem.onclick = () => spotlightSearch(val);
+      }
+    }
+
+    function resetSpotlightSuggestions() {
+      // Reset to defaults
+      document.getElementById('spotlight-input').value = '';
+    }
+
+    // ── Authentication ──
+    async function handleLogin() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const btn = document.getElementById('btn-login-exec');
+      if (!username || !password) { showToast('Vui lòng nhập đầy đủ thông tin'); return; }
+
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Đang kiểm tra...';
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        if (!response.ok) throw new Error(await response.text() || 'Đăng nhập thất bại');
+        const data = await response.json();
+        localStorage.setItem('pentamo_token', data.access_token);
+        localStorage.setItem('pentamo_refresh', data.refresh_token || '');
+        localStorage.setItem('pentamo_user', JSON.stringify(data.user));
+        document.cookie = `pentamo_token=${data.access_token}; path=/; max-age=86400`;
+        currentToken = data.access_token;
+        currentUser = data.user;
+        showToast('Chào mừng trở lại, ' + currentUser.username);
+        updateUIForUser();
+        const role = (currentUser.role || '').toUpperCase();
+        if (role === 'ADMIN') go('admin');
+        else go('dashboard');
+      } catch (err) {
+        showToast('Sai tài khoản hoặc mật khẩu');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Đăng nhập';
+      }
+    }
+
+    function handleLogout(redirect = true) {
+      localStorage.removeItem('pentamo_token');
+      localStorage.removeItem('pentamo_refresh');
+      localStorage.removeItem('pentamo_user');
+      currentToken = null;
+      currentUser = null;
+      document.cookie = "pentamo_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      if (redirect) { showToast('Đã đăng xuất'); updateUIForUser(); go('home'); }
+      const authLinks = document.getElementById('home-auth-links');
+      const userInfo = document.getElementById('home-user-info');
+      if (authLinks) authLinks.style.display = 'flex';
+      if (userInfo) userInfo.style.display = 'none';
+    }
+
+    async function handleRegister() {
+      const name = document.getElementById('reg-name').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const btn = document.getElementById('btn-reg-exec');
+      
+      if (!phone) { showToast('Vui lòng nhập số điện thoại'); return; }
+      if (!password) { showToast('Vui lòng nhập mật khẩu'); return; }
+      
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Đang khởi tạo tài khoản...';
+        
+        // Gọi API Fast Login (mặc định là role USER)
+        const response = await fetch('/api/auth/phone-login-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password }) // role mặc định bên backend là user
+        });
+        
+        if (!response.ok) throw new Error(await response.text() || 'Đăng ký thất bại');
+        const data = await response.json();
+        
+        // Lưu thông tin đăng nhập
+        localStorage.setItem('pentamo_token', data.access_token);
+        localStorage.setItem('pentamo_user', JSON.stringify(data.user));
+        document.cookie = `pentamo_token=${data.access_token}; path=/; max-age=86400`;
+        
+        currentToken = data.access_token;
+        currentUser = data.user;
+        
+        showToast('✓ Đăng ký thành công! Chào ' + (name || phone));
+        updateUIForUser();
+        go('dashboard');
+      } catch (err) {
+        showToast('Lỗi đăng ký: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Tạo tài khoản & Đăng nhập';
+      }
+    }
+
+    function updateUIForUser() {
+      const authLinks = document.getElementById('home-auth-links');
+      const userInfo = document.getElementById('home-user-info');
+      const homeAdmin = document.getElementById('home-admin-link');
+      const sideAdmin = document.getElementById('side-admin-link');
+      if (currentUser) {
+        if (authLinks) authLinks.style.display = 'none';
+        if (userInfo) userInfo.style.display = 'flex';
+        const un = document.getElementById('home-username');
+        if (un) un.textContent = 'Chào, ' + currentUser.username;
+        const dn = document.getElementById('dash-user-name');
+        if (dn) dn.textContent = currentUser.username;
+        const pn = document.getElementById('profile-name');
+        if (pn) pn.textContent = currentUser.username;
+        const role = (currentUser.role || '').toUpperCase();
+        const isAdmin = role === 'ADMIN';
+        if (homeAdmin) homeAdmin.style.display = isAdmin ? 'inline-block' : 'none';
+        if (sideAdmin) sideAdmin.style.display = isAdmin ? 'flex' : 'none';
+        
+        // Ensure Admins can see the Buyer sidebar link
+        const sideBuyer = document.getElementById('side-switch-to-buyer');
+        if (sideBuyer) sideBuyer.style.display = isAdmin ? 'flex' : 'none';
+        
+        // Set profile role text
+        const pr = document.getElementById('profile-role');
+        if (pr) pr.textContent = isAdmin ? 'Administrator' : 'User Member';
+      } else {
+        if (authLinks) authLinks.style.display = 'flex';
+        if (userInfo) userInfo.style.display = 'none';
+        if (homeAdmin) homeAdmin.style.display = 'none';
+        if (sideAdmin) sideAdmin.style.display = 'none';
+        const sideBuyer = document.getElementById('side-switch-to-buyer');
+        if (sideBuyer) sideBuyer.style.display = 'none';
+      }
+    }
+
+    // ── Toast ──
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    // ── Search ──
+    async function executeGlobalSearch() {
+      const query = document.getElementById('spotlight-input')?.value || '';
+      if (query) spotlightSearch(query);
+    }
+
+    function renderListingCard(l, isMine = false) {
+      const isVerified = (l.verification_status || '').toUpperCase() === 'VERIFIED';
+      const statusColor = isVerified ? 'var(--g-green)' : 'var(--g-yellow)';
+      const statusText = isVerified ? 'Đã duyệt' : 'Đang chờ';
+      const priceStr = Number(l.price).toLocaleString();
+      
+      const card = document.createElement('div');
+      card.className = 'card listing-card';
+      
+      // Standardized Vertical Layout
+      card.innerHTML = `
+        <div style="position:relative; height:180px; overflow:hidden;">
+          <img src="${l.image_front || 'https://via.placeholder.com/400x240?text=PentaMo+Vehicle'}" alt="xe" style="width:100%; height:100%; object-fit:cover; cursor:pointer;" onclick="viewListingDetail('${l.id}')">
+          ${isMine ? `<span class="badge" style="position:absolute; top:12px; left:12px; background:rgba(255,255,255,0.9); backdrop-filter:blur(4px); color:${statusColor}; border:1px solid ${statusColor}">${statusText}</span>` : ''}
+          
+          <button class="btn" style="position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.9); border:none; display:flex; align-items:center; justify-content:center; color:var(--g-red); box-shadow:var(--shadow-sm);" onclick="toggleSaveListing('${l.id}', this)" title="Lưu tin">
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top:2px;">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+             </svg>
+          </button>
+        </div>
+        <div class="listing-card-body">
+          <div style="font-size:15px; font-weight:700; color:var(--text); margin-bottom:4px; cursor:pointer;" onclick="viewListingDetail('${l.id}')">
+            ${l.brand} ${l.model_line}
+          </div>
+          <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">Năm: ${l.model_year} | 📍 ${l.province}</div>
+          <div style="font-weight:700; font-size:16px; color:var(--g-red); margin-top:auto;">${priceStr}đ</div>
+        </div>
+        <div class="listing-card-footer">
+          <span style="font-size:11px; color:var(--muted);">Mã: ${l.id.slice(0,6)}</span>
+          <button class="btn btn-outline" style="padding:4px 12px; font-size:12px;" onclick="viewListingDetail('${l.id}')">
+            ${isMine ? 'Quản lý' : 'Chi tiết'}
+          </button>
+        </div>
+      `;
+      return card;
+    }
+
+    async function toggleSaveListing(id, btn) {
+      const token = currentToken || getCookie('pentamo_token');
+      if (!token) { showToast('Vui lòng đăng nhập để lưu tin'); return; }
+      
+      try {
+        const res = await fetch(`/api/buyer/saved-listings/${id}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message);
+          const svg = btn.querySelector('svg');
+          if (data.saved) {
+             svg.setAttribute('fill', 'currentColor');
+          } else {
+             svg.setAttribute('fill', 'none');
+             // If we are in the saved listings section, we might want to refresh
+             const currentHash = window.location.hash;
+             if (currentHash.includes('saved-listings')) loadSavedListings();
+          }
+        }
+      } catch (e) { showToast('Lỗi lưu tin đăng.'); }
+    }
+
+    async function loadSavedListings() {
+      const container = document.getElementById('saved-listings-container');
+      if (!container) return;
+      const token = currentToken || getCookie('pentamo_token');
+      
+      try {
+        container.innerHTML = '<div style="padding:20px 0; color:var(--muted);">Đang tải danh sách đã lưu...</div>';
+        const res = await fetch('/api/buyer/saved-listings', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          container.innerHTML = '';
+          if (data.count === 0) {
+            container.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted); grid-column:1/-1;">Trống. Hãy lưu những chiếc xe bạn thích!</div>';
+            return;
+          }
+          data.listings.forEach(l => {
+            const card = renderListingCard(l, false);
+            // Highlight the heart icon
+            const heartBtn = card.querySelector('button[title="Lưu tin"] svg');
+            if (heartBtn) heartBtn.setAttribute('fill', 'currentColor');
+            container.appendChild(card);
+          });
+        }
+      } catch (e) { container.innerHTML = '<div style="color:var(--g-red);">Lỗi tải tin đã lưu.</div>'; }
+    }
+
+    async function loadNewArrivals() {
+      const container = document.getElementById('new-arrivals-container');
+      if (!container) return;
+      try {
+        const res = await fetch('/api/tools/search?limit=4');
+        const data = await res.json();
+        if (data.success) {
+          container.innerHTML = '';
+          const statTotal = document.getElementById('stat-total-listings');
+          if (statTotal) statTotal.innerText = data.total_count || data.count;
+          
+          if (data.count === 0) {
+            container.innerHTML = '<div style="padding:24px; color:var(--muted);">Chưa có xe nào được đăng.</div>';
+          } else {
+            data.listings.forEach(l => {
+              container.appendChild(renderListingCard(l, false));
+            });
+          }
+        }
+      } catch (e) {
+        container.innerHTML = '<div style="padding:24px; color:var(--g-red);">Lỗi tải hàng mới về.</div>';
+      }
+    }
+
+    async function executeSearch(queryOverride = null) {
+      const brand = document.getElementById('filter-brand')?.value || '';
+      const priceMax = document.getElementById('filter-price')?.value || '';
+      const query = queryOverride || document.getElementById('dash-search-input')?.value || localStorage.getItem('last_search') || '';
+
+      const container = document.getElementById('results-container');
+      container.innerHTML = '<div style="padding:20px 0; color:var(--muted); font-size:14px;">⏳ Đang tìm kiếm...</div>';
+
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+      if (brand) params.append('brands', brand);
+      if (priceMax && Number(priceMax) > 0) params.append('price_max', priceMax);
+
+      try {
+        const res = await fetch('/api/tools/search?' + params.toString());
+        const data = await res.json();
+        if (data.success) {
+          container.innerHTML = data.count === 0
+            ? `
+              <div class="empty-state" style="margin-top:20px;">
+                <div class="empty-state-icon">🔍</div>
+                <div class="empty-state-title">Không thấy xe anh/chị cần rồi ạ</div>
+                <div class="empty-state-text">Dạ kho xe PentaMo hiện chưa có mẫu này. Anh/chị thử tìm tên khác hoặc nhắn tin để em (An) tìm xe giúp anh nhé!</div>
+              </div>`
+            : `<div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Tìm thấy <strong>${data.count} xe</strong></div>`;
+          data.listings.forEach(l => {
+            container.appendChild(renderListingCard(l, false));
+          });
+        }
+      } catch (e) {
+        container.innerHTML = '<div style="padding:20px 0; color:var(--g-red);">Lỗi tìm kiếm. Vui lòng thử lại.</div>';
+      }
+    }
+
+    async function loadMyListings() {
+      const container = document.getElementById('my-listings-container');
+      if (!container) return;
+      const token = currentToken || getCookie('pentamo_token');
+      
+      try {
+        container.innerHTML = '<div style="padding:20px 0; color:var(--muted);">Đang tải tin của bạn...</div>';
+        const res = await fetch('/api/seller/listings', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          container.innerHTML = '';
+          if (data.count === 0) {
+            container.innerHTML = `
+              <div class="card" style="text-align:center; padding:40px; grid-column:1/-1;">
+                <div style="font-size:32px; margin-bottom:12px;">🏍️</div>
+                <div style="font-size:15px; margin-bottom:8px;">Bạn chưa có tin đăng nào</div>
+                <div style="font-size:13px; color:var(--muted);">Hãy đăng tin để tiếp cận hàng nghìn người mua!</div>
+              </div>`;
+            return;
+          }
+          
+          data.listings.forEach(l => {
+            const isVerified = (l.verification_status || '').toUpperCase() === 'VERIFIED';
+            const statusColor = isVerified ? 'var(--g-green)' : 'var(--g-yellow)';
+            const statusText = isVerified ? 'Đã duyệt' : 'Đang chờ';
+            
+            const card = document.createElement('div');
+            card.className = 'card listing-card';
+            card.innerHTML = `
+              <img src="${l.image_front || 'https://via.placeholder.com/300x180?text=PentaMo+Vehicle'}" alt="xe">
+              <div style="flex:1;">
+                <div style="font-size:16px; font-weight:700; color:var(--g-blue); margin-bottom:4px;">${l.brand} ${l.model_line}</div>
+                <div style="font-size:13px; color:var(--muted); margin-bottom:12px;">Năm: ${l.model_year} | 📍 ${l.province}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-weight:700; font-size:16px; color:var(--g-red);">${Number(l.price).toLocaleString()}đ</span>
+                  <span class="badge" style="background:rgba(0,0,0,0.05); color:${statusColor}; border:1px solid ${statusColor}">${statusText}</span>
+                </div>
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:center;">
+                <button class="btn btn-outline" style="padding:6px; font-size:12px;" onclick="viewListingDetail('${l.id}')">Quản lý</button>
+              </div>`;
+            container.appendChild(card);
+          });
+        }
+      } catch (e) {
+        container.innerHTML = '<div style="padding:20px; color:var(--g-red);">Lỗi tải tin đăng cá nhân.</div>';
+      }
+    }
+
+    // ── AI Chat ──
+    function toggleChatPane() {
+      const panel = document.getElementById('main-chat-panel');
+      const wrap = document.getElementById('chat-bubble-wrap');
+      panel.classList.toggle('open');
+      wrap.classList.toggle('open', panel.classList.contains('open'));
+      
+      // Update header for Reset
+      const header = panel.querySelector('.chat-header');
+      if (header && !header.querySelector('.btn-reset-chat')) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-reset-chat';
+        btn.innerHTML = '🧹';
+        btn.style.cssText = 'margin-left:auto; cursor:pointer; background:none; border:none; font-size:16px; transition:transform 0.2s;';
+        btn.onclick = (e) => { e.stopPropagation(); resetCurrentChat(); };
+        header.appendChild(btn);
+      }
+    }
+
+    async function resetCurrentChat() {
+      if (!confirm("Anh muốn xóa sạch lịch sử 'ngáo' để AI bắt đầu lại chuẩn hơn không?")) return;
+      const input = document.getElementById('chat-input');
+      const oldVal = input.value;
+      input.value = '[RESET]';
+      await sendChatMessage();
+      input.value = oldVal;
+      showToast("✓ Đã dọn dẹp lịch sử!");
+    }
+
+    async function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      const msgs = document.getElementById('chat-msgs');
+      const sendBtn = document.getElementById('chat-send-btn');
+      const wrap = document.getElementById('chat-bubble-wrap');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const isReset = text === '[RESET]';
+
+      // User message
+      if (!isReset) {
+        const userMsg = document.createElement('div');
+        userMsg.className = 'chat-msg user';
+        userMsg.textContent = text;
+        msgs.appendChild(userMsg);
+        msgs.scrollTop = msgs.scrollHeight;
+      } else {
+        msgs.innerHTML = '<div class="chat-msg bot">Lịch sử đã được dọn sạch. AN đã sẵn sàng hỗ trợ anh!</div>';
+      }
+      
+      input.value = '';
+      msgs.scrollTop = msgs.scrollHeight;
+
+      // Show thinking state
+      sendBtn.disabled = true;
+      wrap.classList.add('thinking');
+      
+      // Remove thinking dots if they exist
+      document.getElementById('chat-loading-dots')?.remove();
+      
+      const dotEl = document.createElement('div');
+      dotEl.className = 'chat-msg thinking-dots';
+      dotEl.id = 'chat-loading-dots';
+      dotEl.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+      msgs.appendChild(dotEl);
+      msgs.scrollTop = msgs.scrollHeight;
+
+      try {
+        if (!currentConversationId) {
+          const buyer_id = currentUser?.user_id || currentUser?.id || 'guest_' + Math.random().toString(36).substring(2, 11);
+          // Standardize creating conversation
+          const convRes = await fetch('/api/conversations', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', ...(currentToken ? { 'Authorization': 'Bearer ' + currentToken } : {}) },
+            body: JSON.stringify({ buyer_id }) 
+          });
+          const convData = await convRes.json();
+          if (convData.success) {
+              currentConversationId = convData.id || convData.conversation_id;
+          }
+        }
+
+        if (currentConversationId) {
+          // Use the orchestrator-v3 compatible endpoint
+          const res = await fetch(`/api/chat/send?conversation_id=${currentConversationId}&text=${encodeURIComponent(text)}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+          });
+          const data = await res.json();
+          
+          if (data.success && data.response) {
+            document.getElementById('chat-loading-dots')?.remove();
+            
+            const botMsg = document.createElement('div');
+            botMsg.className = 'chat-msg bot';
+            
+            let content = data.response;
+            // Special Render: Receipt
+            if (content.includes("CHỐT ĐƠN THÀNH CÔNG")) {
+                botMsg.innerHTML = `
+                  <div style="padding:15px; background:#fff; color:#333; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1); border:1px solid #eee; margin-top:10px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                      <span style="font-weight:bold; color:var(--g-green);">✅ XÁC NHẬN ĐƠN HÀNG</span>
+                    </div>
+                    <div style="font-weight:600; font-size:15px; margin-bottom:10px;">Dạ vâng! AN đã lập đơn hàng và chuyển cho Admin hỗ trợ anh ngay lập tức ạ.</div>
+                    <div style="font-size:12px; color:var(--muted); padding-top:10px; border-top:1px dashed #eee;">
+                      Trạng thái: Đã bàn giao Admin xử lý thủ tục.
+                    </div>
+                  </div>
+                `;
+            } else {
+                botMsg.textContent = content;
+            }
+            
+            msgs.appendChild(botMsg);
+            msgs.scrollTop = msgs.scrollHeight;
+          }
+        }
+      } catch (e) {
+        console.error('Chat error:', e);
+        showToast('Lỗi AI. Vui lòng thử lại sau.');
+      } finally {
+        document.getElementById('chat-loading-dots')?.remove();
+        sendBtn.disabled = false;
+        wrap.classList.remove('thinking');
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+    }
+
+    function handleAIProactiveActions(response) {
+      response.ui_commands.forEach(cmd => {
+        if (cmd.action === 'AUTO_SEARCH') {
+          const q = cmd.params.query_str || cmd.params.brands || '';
+          showToast('AI đang tự động tìm xe cho anh/chị...');
+          setTimeout(() => {
+            if (currentToken) { go('dashboard', 'search'); executeSearch(q); }
+            else showToast('Vui lòng đăng nhập để xem kết quả chi tiết.');
+          }, 1000);
+        } else if (cmd.action === 'SUGGEST_POST_LISTING') {
+          showToast('AI gợi ý nên đăng tin bán xe để nhận giá tốt.');
+        } else if (cmd.action === 'OPEN_BOOKING_MODAL') {
+          showToast('AI đang chuẩn bị lịch hẹn cho anh/chị...');
+        }
+      });
+    }
+
+    // ── Background pentagons ──
+    function generateOrbs() {
+      const canvas = document.getElementById('orbs');
+      if (!canvas) return;
+      const colors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853'];
+      const sizes = [55, 90, 130, 180, 75, 110, 160];
+      for (let i = 0; i < 14; i++) {
+        const o = document.createElement('div');
+        o.className = 'orb';
+        const s = sizes[i % sizes.length];
+        const rot = Math.random() * 360; // random initial rotation
+        o.style.cssText = `width:${s}px;height:${s}px;background:${colors[i % colors.length]};left:${Math.random() * 95}%;top:${Math.random() * 90}%;animation-duration:${7 + Math.random() * 7}s;animation-delay:${Math.random() * 5}s;transform:rotate(${rot}deg);`;
+        canvas.appendChild(o);
+      }
+    }
+
+    // ── Modal helpers ──
+    function showModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.style.display = 'flex';
+      // Reset listing form if opening listing modal
+      if (id === 'modal-post-listing') {
+        resetListingForm();
+      }
+    }
+    function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    async function loadProvinces() {
+      try {
+        const resp = await fetch('/api/tools/provinces');
+        const data = await resp.json();
+        if (data.success) {
+          const list = document.getElementById('provinces-list');
+          if (list) {
+            list.innerHTML = '';
+            data.provinces.forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p;
+              list.appendChild(opt);
+            });
+          }
+        }
+      } catch (e) { console.error('Lỗi tải tỉnh thành:', e); }
+    }
+    loadProvinces();
+
+    function resetListingForm() {
+      ['ls-brand', 'ls-line', 'ls-year', 'ls-price', 'ls-color', 'ls-address'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('ls-province').value = '';
+      ['front', 'back', 'left', 'right'].forEach(dir => {
+        const slot = document.getElementById('slot-' + dir);
+        if (slot) {
+          const preview = slot.querySelector('.preview-img');
+          if (preview) preview.style.backgroundImage = '';
+          slot.classList.remove('has-file');
+          const span = slot.querySelector('span');
+          if (span) span.style.display = 'block';
+        }
+      });
+    }
+
+    // ── Admin helpers ──
+    function showAdminSect(id, e) {
+      document.querySelectorAll('#page-admin .main-content > div').forEach(d => d.style.display = 'none');
+      document.getElementById(id).style.display = 'block';
+      document.querySelectorAll('#page-admin .sidebar a').forEach(a => a.classList.remove('active'));
+      if (e?.currentTarget) e.currentTarget.classList.add('active');
+    }
+
+
+    function previewUpload(inputId, slotId) {
+      const file = document.getElementById(inputId).files[0];
+      if (!file) return;
+      const slot = document.getElementById(slotId);
+      const preview = slot.querySelector('.preview-img');
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        preview.style.backgroundImage = `url(${e.target.result})`;
+        slot.classList.add('has-file');
+        slot.querySelector('span').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function toggleAuctionFields() {
+      const method = document.getElementById('ls-sale-method').value;
+      if (method === 'AUCTION') {
+        showToast('ℹ️ Chế độ đấu giá: AI sẽ hỗ trợ định giá khởi điểm.');
+      }
+    }
+
+    async function submitListing() {
+      const brand = document.getElementById('ls-brand').value;
+      const model_line = document.getElementById('ls-line').value;
+      const model_year = document.getElementById('ls-year').value;
+      const price = document.getElementById('ls-price').value.replace(/[^\d]/g, '');
+      const province = document.getElementById('ls-province').value;
+      const address = document.getElementById('ls-address').value;
+      const sale_method = document.getElementById('ls-sale-method').value;
+
+      if (!brand || !model_line || !price) { alert('Vui lòng nhập đầy đủ thông tin xe.'); return; }
+      if (!province) { alert('Vui lòng chọn tỉnh/thành phố.'); return; }
+      if (!address) { alert('Vui lòng nhập địa chỉ chi tiết.'); return; }
+
+      // FIX: Use currentToken which is loaded from localStorage on init
+      const token = currentToken;
+      if (!token) {
+        showToast('⚠️ Vui lòng đăng nhập để đăng tin.');
+        go('login');
+        return;
+      }
+
+      try {
+        showToast('Đang tạo tin đăng...');
+        const formData = new FormData();
+        formData.append('brand', brand); formData.append('model_line', model_line);
+        formData.append('model_year', model_year || 2023); formData.append('price', price);
+        formData.append('sale_method', sale_method);
+        formData.append('color', document.getElementById('ls-color').value);
+        formData.append('condition', 'Excellent');
+        formData.append('province', province);
+        formData.append('address_detail', address);
+        const res = await fetch('/api/seller/listings', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.detail);
+        const listingId = data.listing_id;
+
+        showToast('Đang tải ảnh xe và kiểm tra Anti-fraud...');
+        const photoData = new FormData();
+        ['front', 'back', 'left', 'right'].forEach(dir => {
+          const f = document.getElementById('file-' + dir).files[0];
+          if (f) photoData.append('image_' + dir, f);
+        });
+        await fetch(`/api/seller/listings/${listingId}/upload-photos`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: photoData });
+
+        showToast('✓ Chúc mừng! Tin đăng đã lưu thành công. AI đang kiểm duyệt tự động.');
+        hideModal('modal-post-listing');
+        resetListingForm();
+        
+        // Immediate switch and load for better UX
+        go('dashboard', 'my-listings');
+      } catch (e) {
+        if (e.message.includes('401') || e.message.includes('Unauthorized')) {
+          showToast('⚠️ Phiên làm việc hết hạn hoặc Token không hợp lệ. Vui lòng đăng nhập lại.');
+          setTimeout(() => {
+             handleLogout(false);
+             go('login');
+          }, 1500);
+        } else {
+          alert('Lỗi: ' + e.message);
+        }
+      }
+    }
+
+    async function loadAdminOverview() {
+      const token = currentToken || getCookie('pentamo_token');
+      try {
+        const resp = await fetch('/api/admin/metrics', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await resp.json();
+        if (data.success) {
+          const m = data.metrics;
+          document.getElementById('adm-total-users').innerText = m.users.total_users || 0;
+          document.getElementById('adm-pending-listings').innerText = m.listings.pending || 0;
+          document.getElementById('adm-total-listings').innerText = m.listings.total_listings || 0;
+          document.getElementById('adm-total-convs').innerText = m.conversations.total_conversations || 0;
+        }
+      } catch (e) { console.error('Lỗi tải tổng quan admin:', e); }
+    }
+
+    async function loadAdminTraces() {
+      const token = currentToken || getCookie('pentamo_token');
+      const container = document.getElementById('trace-list');
+      try {
+        const resp = await fetch('/api/admin/ai-traces', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await resp.json();
+        if (data.success) {
+          if (data.traces.length === 0) { container.innerHTML = '<div style="padding:20px; color:var(--muted);">Chưa có log suy luận nào.</div>'; return; }
+          let html = '<table style="width:100%; border-collapse:collapse;">';
+          html += '<tr style="background:var(--bg);"><th style="padding:12px 20px; text-align:left; font-size:12px;">Conversation ID</th><th style="padding:12px; font-size:12px;">Thời gian</th><th style="padding:12px; font-size:12px;">Hành động</th></tr>';
+          data.traces.forEach(t => {
+            html += `<tr style="border-top:1px solid var(--border);"><td style="padding:12px 20px; font-family:monospace; font-size:12px;">${t.conversation_id}</td><td style="padding:12px; color:var(--muted); font-size:12px;">${new Date(t.timestamp).toLocaleString()}</td><td style="padding:12px;"><button class="btn btn-outline" style="padding:4px 12px; font-size:12px;" onclick="viewTraceDetail('${t.conversation_id}')">Xem</button></td></tr>`;
+          });
+          html += '</table>';
+          container.innerHTML = html;
+        }
+      } catch (e) { container.innerHTML = '<div style="padding:20px; color:var(--g-red);">Lỗi tải trace.</div>'; }
+    }
+
+    async function viewTraceDetail(id) {
+      const token = currentToken || getCookie('pentamo_token');
+      const detailView = document.getElementById('trace-detail-view');
+      const contentArea = document.getElementById('trace-content');
+      detailView.style.display = 'block';
+      document.getElementById('viewing-conv-id').innerText = id;
+      contentArea.innerText = 'Đang tải...';
+      try {
+        const resp = await fetch(`/api/admin/ai-traces/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await resp.json();
+        if (data.success) contentArea.innerText = JSON.stringify(data.history, null, 2);
+      } catch (e) { contentArea.innerText = 'Lỗi tải chi tiết.'; }
+    }
+
+    function triggerVoiceBot(name) {
+      alert('Đang kết nối AI Voice Bot để gọi xác thực: ' + name);
+    }
+
+    async function saveAdminConfig() {
+      const token = currentToken || getCookie('pentamo_token');
+      showToast('Đang cập nhật cấu hình...');
+      try {
+        await fetch('/api/admin/config/database', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ database_url: document.getElementById('cfg-db-url').value })
+        });
+        alert('✓ Cấu hình đã lưu! Hệ thống cần khởi động lại.');
+      } catch (e) { alert('Lỗi: ' + e.message); }
+    }
+
+    async function loadAdminUsers() {
+      const token = currentToken || getCookie('pentamo_token');
+      const tbody = document.getElementById('admin-users-tbody');
+      tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center;">⏳ Đang tải người dùng...</td></tr>';
+      try {
+        const resp = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await resp.json();
+        if (data.success) {
+          if (data.users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center;">Chưa có người dùng nào.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = '';
+          data.users.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.style.borderTop = '1px solid var(--border)';
+            tr.innerHTML = `
+              <td style="padding:14px 20px;"><b>${u.full_name || 'N/A'}</b><br><small style="color:var(--muted);">${u.phone || 'No phone'}</small></td>
+              <td style="padding:14px;"><span class="badge ${u.google_id ? 'badge-blue' : ''}">${u.google_id ? 'Google' : 'Phone'}</span></td>
+              <td style="padding:14px; font-size:14px; text-transform:capitalize;">${u.role}</td>
+              <td style="padding:14px;"><button class="btn btn-outline" style="padding:5px 12px; font-size:12px;" onclick="triggerVoiceBot('${u.full_name}')">📞 AI Call</button></td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (e) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; color:var(--g-red);">Lỗi tải danh sách người dùng.</td></tr>'; }
+    }
+
+    async function loadAdminListings() {
+      const token = currentToken || getCookie('pentamo_token');
+      const container = document.getElementById('admin-listings-container');
+      container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted);">⏳ Đang tải tin đăng chờ duyệt...</div>';
+      try {
+        const resp = await fetch('/api/admin/listings/pending-verification', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await resp.json();
+        if (data.success) {
+          if (data.listings.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align:center; padding:30px; color:var(--muted);">Hiện không có tin đăng nào chờ duyệt.</div>';
+            return;
+          }
+          container.innerHTML = '';
+          data.listings.forEach(l => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.marginBottom = '12px';
+            card.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                  <div style="font-weight:600; color:var(--g-blue); margin-bottom:4px;">${l.brand} ${l.model_line} (${l.model_year})</div>
+                  <div style="font-size:13px; color:var(--muted); margin-bottom:10px;">ID: ${l.id.slice(0,8)} · ${l.price.toLocaleString()} đ</div>
+                  <div style="background:var(--bg); padding:10px 12px; border-radius:6px; font-size:12px; display:inline-block;">
+                    Tỉnh/Thành: <b>${l.province || 'N/A'}</b> &nbsp;·&nbsp; Trạng thái: <span style="color:var(--g-yellow)">${l.verification_status}</span>
+                  </div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn btn-primary" style="padding:6px 14px; font-size:13px;" onclick="adminVerifyListing('${l.id}', true)">Duyệt</button>
+                  <button class="btn btn-outline" style="padding:6px 14px; font-size:13px; color:var(--g-red);" onclick="adminVerifyListing('${l.id}', false)">Từ chối</button>
+                </div>
+              </div>
+            `;
+            container.appendChild(card);
+          });
+        }
+      } catch (e) { container.innerHTML = '<div style="padding:20px; color:var(--g-red); text-align:center;">Lỗi tải danh sách tin đăng.</div>'; }
+    }
+
+    async function adminVerifyListing(id, approved) {
+      const token = currentToken || getCookie('pentamo_token');
+      if (!confirm(`Bạn chắc chắn muốn ${approved ? 'DUYỆT' : 'TỪ CHỐI'} tin đăng này?`)) return;
+      try {
+        const resp = await fetch(`/api/admin/listings/${id}/verify`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ approved, notes: approved ? 'Admin approved' : 'Admin rejected' })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          showToast(approved ? '✅ Đã duyệt tin đăng!' : '❌ Đã từ chối tin đăng!');
+          loadAdminListings();
+          loadAdminOverview();
+        } else {
+          alert('Lỗi: ' + data.error);
+        }
+      } catch (e) { alert('Lỗi hệ thống khi duyệt tin.'); }
+    }
+
+    async function loadAdminAnalytics() {
+      const token = currentToken || getCookie('pentamo_token');
+      try {
+        const resp = await fetch('/api/admin/analytics', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await resp.json();
+        if (data.success) {
+          const m = data.metrics;
+          document.getElementById('ana-hit-rate').innerText = m.cache_hit_rate;
+          document.getElementById('ana-pos-feedback').innerText = m.db_positive_feedbacks;
+          document.getElementById('ana-neg-feedback').innerText = m.db_negative_feedbacks;
+          document.getElementById('ana-total-req').innerText = m.total_requests;
+
+          document.getElementById('ana-hits-count').innerText = m.cache_hits;
+          document.getElementById('ana-llm-count').innerText = m.llm_calls;
+
+          const hitPercent = m.total_requests > 0 ? (m.cache_hits / m.total_requests * 100) : 0;
+          const llmPercent = m.total_requests > 0 ? (m.llm_calls / m.total_requests * 100) : 0;
+
+          document.getElementById('ana-hits-bar').style.width = hitPercent + '%';
+          document.getElementById('ana-llm-bar').style.width = llmPercent + '%';
+          
+          loadAdminLearningLog();
+        }
+      } catch (e) { showToast('Lỗi tải dữ liệu phân tích'); }
+    }
+
+    async function loadAdminLearningLog() {
+      const logContainer = document.getElementById('learning-log');
+      if (!logContainer) return;
+      try {
+        const resp = await fetch('/api/memory/stats');
+        const data = await resp.json();
+        if (data.success) {
+          const stats = data.memory;
+          let html = `<div style="margin-bottom:10px;">Lần cập nhật cuối: <b>${stats.last_updated ? new Date(stats.last_updated).toLocaleString() : 'Chưa có'}</b></div>`;
+          html += '<table style="width:100%; font-size:12px; border-collapse:collapse;">';
+          html += '<tr style="border-bottom:1px solid var(--border); color:var(--muted);"><th style="text-align:left; padding:4px;">Chủ đề đã học</th><th style="padding:4px;">Mode</th></tr>';
+          
+          if (stats.recent_learning && stats.recent_learning.length > 0) {
+            stats.recent_learning.forEach(item => {
+              html += `<tr style="border-bottom:1px solid var(--border);"><td style="padding:4px;">${item.q}</td><td style="text-align:center; padding:4px;">${item.mode}</td></tr>`;
+            });
+          } else {
+            html += '<tr><td colspan="2" style="padding:10px; text-align:center;">Chưa có dữ liệu mới.</td></tr>';
+          }
+          html += '</table>';
+          logContainer.innerHTML = html;
+        }
+      } catch (e) { logContainer.innerHTML = 'Lỗi tải nhật ký học tập.'; }
+    }
+
+    function formatPriceInput(input) {
+      let value = input.value.replace(/[^\d]/g, '');
+      if (value) {
+        input.value = parseInt(value).toLocaleString('vi-VN');
+      } else {
+        input.value = '';
+      }
+    }
+
+    async function viewListingDetail(id) {
+      const token = currentToken || getCookie('pentamo_token');
+      try {
+        const resp = await fetch(`/api/tools/search?q=${id}`); // Simple way to get 1 item if handler handles ID
+        // Actually, we should call a specific detail API. Handler has get_listing_detail.
+        // Let's use a mocked fetch or check if there's a route.
+        // For now, I'll assume we can get it from the my-listings data or fetch.
+        showToast('Đang tải chi tiết...');
+        
+        // Let's use a temporary fetch to a generic search for the ID
+        const r = await fetch(`/api/tools/search?q=${id}`);
+        const data = await r.json();
+        if (data.success && data.listings?.length > 0) {
+            const l = data.listings[0];
+            // Or better, let's look for the one in loaded listings if we want speed
+            // But fetch is safer.
+            
+            document.getElementById('dt-title').innerText = `🏍️ ${l.brand} ${l.model_line}`;
+            document.getElementById('dt-img-front').src = l.image_front || 'static/img/placeholder.png';
+            document.getElementById('dt-img-back').src = l.image_back || 'static/img/placeholder.png';
+            document.getElementById('dt-img-left').src = l.image_left || 'static/img/placeholder.png';
+            document.getElementById('dt-img-right').src = l.image_right || 'static/img/placeholder.png';
+            
+            document.getElementById('dt-info').innerHTML = `
+                <b>Giá:</b> <span style="color:var(--g-red); font-weight:700;">${l.price?.toLocaleString()}đ</span><br>
+                <b>Khu vực:</b> ${l.province}<br>
+                <b>Tình trạng:</b> ${l.condition || 'N/A'}<br>
+                <b>Năm sản xuất:</b> ${l.model_year}<br>
+                <b>Địa chỉ:</b> ${l.address_detail || 'Đang cập nhật'}
+                <input type="hidden" id="viewing-listing-id" value="${l.id}">
+                <input type="hidden" id="viewing-seller-id" value="${l.seller_id}">
+            `;
+            
+            // Show interactions ONLY if not my own listing
+            const isMine = currentUser && l.seller_id === (currentUser.user_id || currentUser.id);
+            document.getElementById('dt-interactions').style.display = isMine ? 'none' : 'flex';
+            
+            showModal('modal-listing-detail');
+        } else {
+            showToast('Không tìm thấy thông tin xe.');
+        }
+      } catch (e) { showToast('Lỗi tải chi tiết xe.'); }
+    }
+
+    async function startDirectChat() {
+      const listingId = document.getElementById('viewing-listing-id').value;
+      const sellerId = document.getElementById('viewing-seller-id').value;
+      const token = currentToken || getCookie('pentamo_token');
+      
+      if (!token) { showToast('Vui lòng đăng nhập để nhắn tin'); return; }
+      
+      try {
+        const res = await fetch(`/api/chat/conversations`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ buyer_id: (currentUser.user_id || currentUser.id), seller_id: sellerId, listing_id: listingId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentConversationId = data.conversation_id;
+          hideModal('modal-listing-detail');
+          showSection('chat');
+          loadMessages(currentConversationId);
+        }
+      } catch (e) { showToast('Không thể kết nối với người bán'); }
+    }
+
+    async function submitAppointment() {
+      const date = document.getElementById('apt-date').value;
+      const location = document.getElementById('apt-location').value;
+      const listingId = document.getElementById('viewing-listing-id').value;
+      
+      if (!date || !location) { showToast('Vui lòng nhập đầy đủ ngày và địa điểm'); return; }
+      const token = currentToken || getCookie('pentamo_token');
+      try {
+        const res = await fetch(`/api/buyer/book-appointment?listing_id=${listingId}&date=${date}&location=${location}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ Đã gửi yêu cầu đặt lịch!');
+          hideModal('modal-book-appointment');
+          hideModal('modal-listing-detail');
+        } else { showToast('Lỗi: ' + (data.detail || data.error)); }
+      } catch (e) { showToast('Lỗi hệ thống khi đặt lịch'); }
+    }
+
+    async function loadChatList() {
+      const container = document.getElementById('chat-list-container');
+      const token = currentToken || getCookie('pentamo_token');
+      try {
+        const res = await fetch('/api/chat/conversations', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (data.conversations.length === 0) {
+            container.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <div class="empty-state-title">Chưa có tin nhắn</div>
+                <div class="empty-state-text">Khi bạn bắt đầu trò chuyện với người bán hoặc AI, các cuộc hội thoại sẽ xuất hiện tại đây.</div>
+              </div>`;
+            return;
+          }
+          container.innerHTML = data.conversations.map(c => `
+            <div class="card" style="padding:16px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; margin-bottom:8px;" onclick="viewConversation('${c.id}')">
+              <div>
+                <div style="font-weight:700;">${c.other_name}</div>
+                <div style="font-size:12px; color:var(--muted);">${c.listing_title}</div>
+                <div style="font-size:13px; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:400px;">${c.last_message}</div>
+              </div>
+              <div style="font-size:11px; color:var(--muted);">${new Date(c.updated_at).toLocaleDateString()}</div>
+            </div>
+          `).join('');
+        }
+      } catch (e) { container.innerHTML = 'Lỗi tải danh sách chat.'; }
+    }
+
+    async function loadAppointments() {
+      const container = document.getElementById('appointments-container');
+      const token = currentToken || getCookie('pentamo_token');
+      
+      try {
+        const res = await fetch('/api/chat/appointments', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (data.appointments.length === 0) {
+            container.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">📅</div>
+                <div class="empty-state-title">Chưa có lịch hẹn</div>
+                <div class="empty-state-text">Bạn có thể đặt lịch xem xe trực tiếp với người bán thông qua cửa sổ chat.</div>
+              </div>`;
+            return;
+          }
+          container.innerHTML = data.appointments.map(a => {
+            const roleLabel = a.role === 'seller' ? '<span class="badge" style="background:var(--g-blue); color:white;">BÁN</span>' : '<span class="badge" style="background:var(--g-green); color:white;">MUA</span>';
+            return `
+              <div class="card" style="padding:16px; margin-bottom:12px; border-left:4px solid ${a.status === 'ACCEPTED' ? 'var(--g-green)' : (a.status === 'REJECTED' ? 'var(--g-red)' : 'var(--g-yellow)')}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div>${roleLabel} <b style="margin-left:8px;">${a.listing_title}</b></div>
+                  <div class="badge" style="background:var(--bg); border:1px solid #ccc;">${a.status}</div>
+                </div>
+                <div style="font-size:14px; margin-top:8px;">
+                  📅 <b>Thời gian:</b> ${new Date(a.date).toLocaleString('vi-VN')} <br>
+                  📍 <b>Địa điểm:</b> ${a.location} <br>
+                  👤 <b>${a.role === 'seller' ? 'Người mua: ' : 'Người bán: '}</b> ${a.other_party}
+                </div>
+                ${a.status === 'PENDING' && a.role === 'seller' ? `
+                  <div style="margin-top:12px; display:flex; gap:8px;">
+                    <button class="btn btn-primary" style="padding:4px 12px; font-size:12px;" onclick="updateAptStatus('${a.id}', 'ACCEPTED')">Chấp nhận</button>
+                    <button class="btn btn-outline" style="padding:4px 12px; font-size:12px;" onclick="updateAptStatus('${a.id}', 'REJECTED')">Từ chối</button>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (e) { container.innerHTML = 'Lỗi tải lịch hẹn.'; }
+    }
+
+    async function updateAptStatus(id, status) {
+      const token = currentToken || getCookie('pentamo_token');
+      try {
+        const res = await fetch(`/api/seller/appointments/${id}?status=${status}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) { showToast(data.message); loadAppointments(); }
+      } catch (e) { showToast('Lỗi cập nhật lịch hẹn'); }
+    }
+
+    function viewConversation(id) {
+       currentConversationId = id;
+       showSection('chat'); 
+       loadMessages(id);
+    }
+
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,23 @@
+{
+    "c1": {
+        "expected_lead_stage": "APPOINTMENT",
+        "expected_slots": {
+            "brand": "Honda",
+            "model": "SH",
+            "condition": "New"
+        },
+        "expected_tools": ["search_listings", "book_appointment"]
+    },
+    "c2": {
+        "expected_lead_stage": "MATCHING",
+        "expected_slots": {
+            "intent": "purchase"
+        },
+        "expected_tools": ["search_listings"]
+    },
+    "c3": {
+        "expected_lead_stage": "DISCOVERY",
+        "expected_risks": ["suspicious_payment"],
+        "expected_tools": ["detect_risks"]
+    }
+}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập | pentaMO</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            height: 100vh;
+            margin: 0;
+        }
+        .login-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="logo-sm" onclick="location.href='/'">
+            <span>p</span><span>e</span><span>n</span><span>t</span><span>a</span><span>M</span><span>O</span>
+        </div>
+        
+        <div class="auth-card">
+            <h2>Chào mừng trở lại</h2>
+            <p style="color:var(--muted); margin-bottom:28px; font-size:14px;">Đăng nhập để tiếp tục khám phá pentaMO</p>
+
+            <div class="form-group">
+                <label>Tên đăng nhập</label>
+                <input id="login-username" type="text" placeholder="admin / buyer / seller">
+            </div>
+            
+            <div class="form-group">
+                <label>Mật khẩu</label>
+                <input id="login-password" type="password" placeholder="••••••••">
+            </div>
+            
+            <button class="btn btn-primary" style="width:100%" id="btn-login-exec" onclick="handleStandaloneLogin()">Đăng nhập</button>
+
+            <div style="margin-top:24px; text-align:center; font-size:13px; color:var(--muted);">
+                Chưa có tài khoản? <a href="/#register" style="color:var(--g-blue); text-decoration:none;">Đăng ký ngay</a>
+                <br><br>
+                <small>Demo: admin / PentaMo@Admin123</small>
+            </div>
+        </div>
+        
+        <div style="font-size:12px; color:var(--muted); text-align:center;">
+            © 2026 pentaMO · Powered by AI
+        </div>
+    </div>
+
+    <script>
+        async function handleStandaloneLogin() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('btn-login-exec');
+
+            if (!username || !password) {
+                alert('Vui lòng nhập đầy đủ thông tin');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Đang kiểm tra...';
+
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) throw new Error('Đăng nhập thất bại');
+
+                const data = await response.json();
+                
+                localStorage.setItem('pentamo_token', data.access_token);
+                localStorage.setItem('pentamo_user', JSON.stringify(data.user));
+                
+                location.href = data.user.role.includes('admin') ? '/#admin' : '/#dashboard';
+
+            } catch (err) {
+                alert('Sai tài khoản hoặc mật khẩu');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Đăng nhập';
+            }
+        }
+    </script>
+</body>
+</html>

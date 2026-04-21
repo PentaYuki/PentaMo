@@ -1,0 +1,474 @@
+[
+  {
+    "file_path": "./DOCUMENTATION_INDEX.md",
+    "filename": "DOCUMENTATION_INDEX.md",
+    "date": "20/04/2026",
+    "category": "REPORT",
+    "summary": "# 📚 PentaMo V3 - Complete Documentation Index",
+    "size_kb": 10.79
+  },
+  {
+    "file_path": "./CLEANUP_FINAL_REPORT.md",
+    "filename": "CLEANUP_FINAL_REPORT.md",
+    "date": "20/04/2026",
+    "category": "REPORT",
+    "summary": "# ✅ PentaMo Architecture Cleanup - Final Report",
+    "size_kb": 10.12
+  },
+  {
+    "file_path": "./ARCHITECTURE_CLEAN.md",
+    "filename": "ARCHITECTURE_CLEAN.md",
+    "date": "20/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# PentaMo V3 - Clean Architecture Overview",
+    "size_kb": 11.78
+  },
+  {
+    "file_path": "./CLEANUP_COMPLETE.md",
+    "filename": "CLEANUP_COMPLETE.md",
+    "date": "20/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# PentaMo Architecture Cleanup - Complete",
+    "size_kb": 8.1
+  },
+  {
+    "file_path": "./MIGRATION_GUIDE_V2_TO_V3.md",
+    "filename": "MIGRATION_GUIDE_V2_TO_V3.md",
+    "date": "20/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# Migration Guide: Orchestrator v2 → v3",
+    "size_kb": 9.47
+  },
+  {
+    "file_path": "./REFACTOR_QUICK_START.md",
+    "filename": "REFACTOR_QUICK_START.md",
+    "date": "20/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# PentaMo System Refactor - Quick Reference",
+    "size_kb": 5.86
+  },
+  {
+    "file_path": "./REFACTOR_V3_COMPLETE.md",
+    "filename": "REFACTOR_V3_COMPLETE.md",
+    "date": "20/04/2026",
+    "category": "TESTING",
+    "summary": "# PentaMo Refactor Complete - Orchestrator V3",
+    "size_kb": 10.69
+  },
+  {
+    "file_path": "./CLEANUP_CHECKLIST.md",
+    "filename": "CLEANUP_CHECKLIST.md",
+    "date": "20/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# Quick Reference: PentaMo Codebase Cleanup Action Items",
+    "size_kb": 3.9
+  },
+  {
+    "file_path": "./CODEBASE_ANALYSIS_REPORT.md",
+    "filename": "CODEBASE_ANALYSIS_REPORT.md",
+    "date": "20/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# PentaMo Codebase Dependency Analysis Report",
+    "size_kb": 13.91
+  },
+  {
+    "file_path": "./PRONOUN_ENHANCEMENT_COMPLETE.md",
+    "filename": "PRONOUN_ENHANCEMENT_COMPLETE.md",
+    "date": "20/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# Vietnamese Pronoun Handler - Enhancement Complete ✅",
+    "size_kb": 4.72
+  },
+  {
+    "file_path": "./documentation/PRONOUN_DEPLOYMENT_STATUS.md",
+    "filename": "PRONOUN_DEPLOYMENT_STATUS.md",
+    "date": "20/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# Vietnamese Pronoun Handler - Deployment Checklist & Status",
+    "size_kb": 7.78
+  },
+  {
+    "file_path": "./documentation/PRONOUN_HANDLER_DOCUMENTATION.md",
+    "filename": "PRONOUN_HANDLER_DOCUMENTATION.md",
+    "date": "20/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# Pronoun Handler - Vietnamese AI Response Quality System",
+    "size_kb": 8.59
+  },
+  {
+    "file_path": "./documentation/PRONOUN_QUICK_START.md",
+    "filename": "PRONOUN_QUICK_START.md",
+    "date": "20/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# Quick Start: Vietnamese Pronoun Handler",
+    "size_kb": 3.98
+  },
+  {
+    "file_path": "./documentation/PRONOUN_INTEGRATION_EXAMPLES.md",
+    "filename": "PRONOUN_INTEGRATION_EXAMPLES.md",
+    "date": "20/04/2026",
+    "category": "BUG_FIX",
+    "summary": "\"\"\"",
+    "size_kb": 8.81
+  },
+  {
+    "file_path": "./documentation/DUAL_MODE_SYSTEM_IMPLEMENTATION.md",
+    "filename": "DUAL_MODE_SYSTEM_IMPLEMENTATION.md",
+    "date": "19/04/2026",
+    "category": "FEATURE",
+    "summary": "# 🎯 Dual-Mode Interaction System - Implementation Complete",
+    "size_kb": 15.14
+  },
+  {
+    "file_path": "./documentation/LISTING_AND_ADDRESS_FIXES.md",
+    "filename": "LISTING_AND_ADDRESS_FIXES.md",
+    "date": "19/04/2026",
+    "category": "TESTING",
+    "summary": "# ✅ Listing Display & Address Field Fixes - April 19, 2026",
+    "size_kb": 7.61
+  },
+  {
+    "file_path": "./documentation/RESPONSE_QUALITY_FIXES.md",
+    "filename": "RESPONSE_QUALITY_FIXES.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# ✅ AI Response Quality Fixes - April 19, 2026",
+    "size_kb": 7.71
+  },
+  {
+    "file_path": "./documentation/CRITICAL_BUGS_FIXED.md",
+    "filename": "CRITICAL_BUGS_FIXED.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# 🔴 Critical Bugs Fixed - April 19, 2026",
+    "size_kb": 7.45
+  },
+  {
+    "file_path": "./documentation/STATUS_REPORT.md",
+    "filename": "STATUS_REPORT.md",
+    "date": "19/04/2026",
+    "category": "REPORT",
+    "summary": "# ✅ PentaMO System - Complete Status Report",
+    "size_kb": 8.52
+  },
+  {
+    "file_path": "./documentation/AUTHENTICATION_FIXES.md",
+    "filename": "AUTHENTICATION_FIXES.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# PentaMO Authentication & Upload System - Fixes Applied",
+    "size_kb": 7.68
+  },
+  {
+    "file_path": "./documentation/FIX_SUMMARY.md",
+    "filename": "FIX_SUMMARY.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# 🔧 PentaMO System - Quick Fix Guide",
+    "size_kb": 4.2
+  },
+  {
+    "file_path": "./documentation/ASSIGNMENT_STATUS_REPORT.md",
+    "filename": "ASSIGNMENT_STATUS_REPORT.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# 📋 AI Product Engineer Assignment - Status Report",
+    "size_kb": 8.69
+  },
+  {
+    "file_path": "./documentation/UPLOAD_SYSTEM_DIAGNOSIS.md",
+    "filename": "UPLOAD_SYSTEM_DIAGNOSIS.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# 🔧 Vấn đề & Giải Pháp: Tại Sao Upload Không Lưu Dữ Liệu",
+    "size_kb": 7.37
+  },
+  {
+    "file_path": "./documentation/details/architecture/DIRECTORY_STRUCTURE.md",
+    "filename": "DIRECTORY_STRUCTURE.md",
+    "date": "19/04/2026",
+    "category": "ARCHITECTURE",
+    "summary": "# PentaMo System Directories Architecture",
+    "size_kb": 19.31
+  },
+  {
+    "file_path": "./documentation/details/INDEX.md",
+    "filename": "INDEX.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# PentaMo Documentation Index",
+    "size_kb": 9.67
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/PHASE_123_IMPLEMENTATION_SUMMARY.md",
+    "filename": "PHASE_123_IMPLEMENTATION_SUMMARY.md",
+    "date": "19/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# 🚀 PentaMo System - Phase 1, 2, 3 Implementation Complete",
+    "size_kb": 12.39
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/AI_NATURAL_CONVERSATION_FIX.md",
+    "filename": "AI_NATURAL_CONVERSATION_FIX.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# 🎯 AI Natural Conversation Fix - Implementation Complete",
+    "size_kb": 8.29
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/PHASE_8_COMPLETION_REPORT.md",
+    "filename": "PHASE_8_COMPLETION_REPORT.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# ✅ PHASE 8 COMPLETION REPORT",
+    "size_kb": 13.87
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/PHASE_8_BEFORE_AFTER.md",
+    "filename": "PHASE_8_BEFORE_AFTER.md",
+    "date": "19/04/2026",
+    "category": "REPORT",
+    "summary": "# Before vs After: Phase 8 Transformation",
+    "size_kb": 14.16
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/PHASE_8_README.md",
+    "filename": "PHASE_8_README.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# 🚀 Phase 8: AI Sales Intelligence System - Complete Overview",
+    "size_kb": 15.21
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/PHASE_8_TESTING_CHECKLIST.md",
+    "filename": "PHASE_8_TESTING_CHECKLIST.md",
+    "date": "19/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# Phase 8: Integration Checklist & Next Steps",
+    "size_kb": 14.29
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/PHASE_8_IMPLEMENTATION_SUMMARY.md",
+    "filename": "PHASE_8_IMPLEMENTATION_SUMMARY.md",
+    "date": "19/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# 🎯 Phase 8 Implementation Summary",
+    "size_kb": 12.85
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/PHASE_8_QUICK_START.md",
+    "filename": "PHASE_8_QUICK_START.md",
+    "date": "19/04/2026",
+    "category": "TESTING",
+    "summary": "# Phase 8: Quick Start Guide",
+    "size_kb": 7.89
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/PHASE_8_SALES_ENHANCEMENTS.md",
+    "filename": "PHASE_8_SALES_ENHANCEMENTS.md",
+    "date": "19/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# 🚀 8 AI Sales Enhancements - Implementation Complete",
+    "size_kb": 21.56
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/LLM_RESPONSE_INDEX.md",
+    "filename": "LLM_RESPONSE_INDEX.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# 🎯 LLM Response System - Documentation Index",
+    "size_kb": 10.51
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/LLM_RESPONSE_COMPLETION_REPORT.md",
+    "filename": "LLM_RESPONSE_COMPLETION_REPORT.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# 🎉 LLM Response System - 完成報告 (Final Report)",
+    "size_kb": 12.87
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/LLM_RESPONSE_IMPLEMENTATION_SUMMARY.md",
+    "filename": "LLM_RESPONSE_IMPLEMENTATION_SUMMARY.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# ✅ LLM Response System - Implementation Complete",
+    "size_kb": 11.52
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/LLM_RESPONSE_QUICK_REFERENCE.md",
+    "filename": "LLM_RESPONSE_QUICK_REFERENCE.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# 🎯 LLM Response System - Quick Reference",
+    "size_kb": 11.83
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/LLM_RESPONSE_TEST_GUIDE.md",
+    "filename": "LLM_RESPONSE_TEST_GUIDE.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# 🧪 LLM Response System - Test Guide",
+    "size_kb": 15.97
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/LLM_RESPONSE_IMPROVEMENTS.md",
+    "filename": "LLM_RESPONSE_IMPROVEMENTS.md",
+    "date": "19/04/2026",
+    "category": "REPORT",
+    "summary": "# 🚀 LLM-Based Response System - Cải tiến Lớn",
+    "size_kb": 10.6
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/FINAL_SUMMARY.md",
+    "filename": "FINAL_SUMMARY.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# 📚 PentaMo Documentation System - Final Summary",
+    "size_kb": 11.1
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/COMPLETION_REPORT.md",
+    "filename": "COMPLETION_REPORT.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# 🎉 PentaMo Documentation System - Completion Report",
+    "size_kb": 12.77
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/SYSTEM_UPDATE_SUMMARY.md",
+    "filename": "SYSTEM_UPDATE_SUMMARY.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# ✅ SYSTEM DOCUMENTATION UPDATE - COMPLETE",
+    "size_kb": 13.46
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/DOCUMENTATION_COMPLETE.md",
+    "filename": "DOCUMENTATION_COMPLETE.md",
+    "date": "19/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# ✅ PentaMo Documentation System - Complete",
+    "size_kb": 12.45
+  },
+  {
+    "file_path": "./documentation/details/reference/LEGACY_DOCUMENTATION.md",
+    "filename": "LEGACY_DOCUMENTATION.md",
+    "date": "19/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# PentaMo Legacy Documentation Reference",
+    "size_kb": 10.18
+  },
+  {
+    "file_path": "./documentation/details/architecture/AI_AGENT_ARCHITECTURE.md",
+    "filename": "AI_AGENT_ARCHITECTURE.md",
+    "date": "19/04/2026",
+    "category": "REPORT",
+    "summary": "# PentaMo AI Agent Architecture",
+    "size_kb": 14.68
+  },
+  {
+    "file_path": "./documentation/details/architecture/UI_FRONTEND_ARCHITECTURE.md",
+    "filename": "UI_FRONTEND_ARCHITECTURE.md",
+    "date": "19/04/2026",
+    "category": "ARCHITECTURE",
+    "summary": "# PentaMo UI & Frontend Architecture",
+    "size_kb": 24.01
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/MISSING_ENDPOINTS_IMPLEMENTATION.md",
+    "filename": "MISSING_ENDPOINTS_IMPLEMENTATION.md",
+    "date": "18/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# Missing Endpoints: Registration & Image Upload - Implementation Guide",
+    "size_kb": 19.26
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/AI_AGENT_SYSTEM_GUIDE.md",
+    "filename": "AI_AGENT_SYSTEM_GUIDE.md",
+    "date": "18/04/2026",
+    "category": "ARCHITECTURE",
+    "summary": "# AI Agent System for Motorbike Marketplace - Complete Implementation Guide",
+    "size_kb": 17.23
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/REDIRECT_LOOP_FIX.md",
+    "filename": "REDIRECT_LOOP_FIX.md",
+    "date": "18/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# FIX: Redirect Loop Issue - Authentication Pages",
+    "size_kb": 9.54
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/EXECUTIVE_SUMMARY.md",
+    "filename": "EXECUTIVE_SUMMARY.md",
+    "date": "18/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# 🎉 EXECUTIVE SUMMARY: Issues #3-#9 COMPLETE",
+    "size_kb": 10.22
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/QUICK_REFERENCE_SERVICES.md",
+    "filename": "QUICK_REFERENCE_SERVICES.md",
+    "date": "18/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# QUICK REFERENCE GUIDE: Using the New Services",
+    "size_kb": 9.32
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/TECHNICAL_REPORT_ISSUE_3-9.md",
+    "filename": "TECHNICAL_REPORT_ISSUE_3-9.md",
+    "date": "18/04/2026",
+    "category": "BUG_FIX",
+    "summary": "# BÁNG CÁO KỸ THUẬT: PHÁT HIỆN & FIX 7 VẤN ĐỀ ẨNẦN ĐỀ #3-#9",
+    "size_kb": 14.54
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/PROJECT_STRUCTURE.md",
+    "filename": "PROJECT_STRUCTURE.md",
+    "date": "18/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# 📁 PentaMo V3.1 - Project Structure",
+    "size_kb": 6.27
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/legacy_docs_folder/PHASE3.5_PHASE4_EXECUTION.md",
+    "filename": "PHASE3.5_PHASE4_EXECUTION.md",
+    "date": "18/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# Phase 3.5 & Phase 4: Execution Guide",
+    "size_kb": 20.53
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/legacy_docs_folder/PHASE4_PRODUCTION_HARDENING.md",
+    "filename": "PHASE4_PRODUCTION_HARDENING.md",
+    "date": "18/04/2026",
+    "category": "TESTING",
+    "summary": "# Phase 4: Production Hardening Setup Guide",
+    "size_kb": 13.25
+  },
+  {
+    "file_path": "./documentation/README.md",
+    "filename": "README.md",
+    "date": "18/04/2026",
+    "category": "DOCUMENTATION",
+    "summary": "# PentaMo 🏍️ — Vietnam Motorcycle Trading AI Agent",
+    "size_kb": 13.05
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/DEPLOYMENT.md",
+    "filename": "DEPLOYMENT.md",
+    "date": "18/04/2026",
+    "category": "TESTING",
+    "summary": "# PentaMo Deployment Guide",
+    "size_kb": 7.2
+  },
+  {
+    "file_path": "./documentation/details/archived_root_docs/DESIGN_SYSTEM.md",
+    "filename": "DESIGN_SYSTEM.md",
+    "date": "18/04/2026",
+    "category": "IMPLEMENTATION",
+    "summary": "# 🎨 PentaMo Design System",
+    "size_kb": 7.07
+  }
+]
