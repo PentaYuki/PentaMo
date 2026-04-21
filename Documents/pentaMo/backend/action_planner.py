@@ -49,12 +49,15 @@ class ActionPlanner:
                 return "handoff_to_human", {"reason": "SELLER_RESISTANCE"}, "Người bán từ chối làm việc qua bên thứ ba, cần nhân viên vào xử lý khéo léo."
 
         # 3. CASE C1: Price Tension / Negotiation
-        budget = state.get("budget")
+        budget_obj = state.get("budget")
         asking_price = state.get("listing_context", {}).get("price")
-        if budget and asking_price:
-            gap = abs(asking_price - budget) / asking_price
-            if gap > 0.15: # Over 15% gap
-                return "detect_risks", {"type": "PRICE_MISMATCH", "gap": gap}, f"Khoảng cách giá quá lớn ({gap*100:.1f}%). Cần đàm phán hoặc tìm xe khác."
+        if budget_obj and asking_price:
+            # Handle budget if it's a dictionary (from orchestrator_v3)
+            budget_val = budget_obj.get("max") if isinstance(budget_obj, dict) else budget_obj
+            if budget_val:
+                gap = abs(asking_price - budget_val) / asking_price
+                if gap > 0.15: # Over 15% gap
+                    return "detect_risks", {"type": "PRICE_MISMATCH", "gap": gap}, f"Khoảng cách giá quá lớn ({gap*100:.1f}%). Cần đàm phán hoặc tìm xe khác."
 
         # 4. Standard Appointment Intent
         if any(kw in msg_lower for kw in self.appointment_keywords):

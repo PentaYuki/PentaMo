@@ -489,6 +489,7 @@
         <a id="side-admin-overview" class="active" onclick="showAdminSect('admin-overview', event); loadAdminOverview()"><span class="ico">📊</span> Tổng quan</a>
         <a id="side-admin-users" onclick="showAdminSect('admin-users', event); loadAdminUsers()"><span class="ico">👥</span> Người dùng</a>
         <a id="side-admin-listings" onclick="showAdminSect('admin-listings', event); loadAdminListings()"><span class="ico">🏷️</span> Kiểm duyệt</a>
+        <a id="side-admin-transactions" onclick="showAdminSect('admin-transactions', event); loadAdminTransactions()"><span class="ico">📦</span> Đơn hàng chốt</a>
         <a id="side-admin-risks" onclick="showAdminSect('admin-risks', event)"><span class="ico">⚠️</span> Rủi ro</a>
         <div class="sect-label" style="margin-top:8px;">Hệ thống</div>
         <a id="side-admin-config" onclick="showAdminSect('admin-config', event)"><span class="ico">⚙️</span> Cấu hình kỹ thuật</a>
@@ -556,6 +557,27 @@
           <div class="page-title">Kiểm duyệt tin đăng</div>
           <div id="admin-listings-container">
             <!-- Cards loaded via JS -->
+          </div>
+        </div>
+
+        <!-- Transactions / Orders -->
+        <div id="admin-transactions" style="display:none;">
+          <div class="page-title">Đơn hàng thành công (AI Closed)</div>
+          <div class="card" style="padding:0; overflow:hidden;">
+            <table style="width:100%; border-collapse:collapse;">
+              <thead>
+                <tr style="background:var(--bg);">
+                  <th style="padding:14px 20px; font-size:12px; text-transform:uppercase; color:var(--muted);">Ngày chốt</th>
+                  <th style="padding:14px; font-size:12px; text-transform:uppercase; color:var(--muted);">Xe máy</th>
+                  <th style="padding:14px; font-size:12px; text-transform:uppercase; color:var(--muted);">Người mua</th>
+                  <th style="padding:14px; font-size:12px; text-transform:uppercase; color:var(--muted);">Giá trị</th>
+                  <th style="padding:14px; font-size:12px; text-transform:uppercase; color:var(--muted);">Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="admin-transactions-tbody">
+                <!-- Data loaded via JS -->
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -1671,7 +1693,43 @@
       detailView.style.display = 'block';
       document.getElementById('viewing-conv-id').innerText = id;
       contentArea.innerText = 'Đang tải...';
+      try {    async function loadAdminTransactions() {
       try {
+        const res = await fetch(`${API_BASE}/admin/transactions`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('penta_token')}` }
+        });
+        const data = await res.json();
+        if (!data.success) return;
+
+        const tbody = document.getElementById('admin-transactions-tbody');
+        tbody.innerHTML = '';
+
+        if (data.transactions.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="padding:40px; text-align:center; color:var(--muted);">Chưa có đơn hàng nào được chốt thành công.</td></tr>`;
+          return;
+        }
+
+        data.transactions.forEach(tx => {
+          const date = new Date(tx.created_at).toLocaleDateString('vi-VN');
+          const row = document.createElement('tr');
+          row.style.borderBottom = '1px solid var(--border)';
+          row.innerHTML = `
+            <td style="padding:16px 20px; font-size:14px;">${date}</td>
+            <td style="padding:16px; font-size:14px; font-weight:600;">${tx.vehicle}</td>
+            <td style="padding:16px; font-size:14px;">${tx.buyer}</td>
+            <td style="padding:16px; font-size:14px; color:var(--g-green); font-weight:700;">${tx.amount.toLocaleString()}đ</td>
+            <td style="padding:16px;">
+              <button class="btn btn-outline" style="padding:6px 12px; font-size:12px;" onclick="go('dashboard', 'chat'); openChat('${tx.conversation_id}')">
+                Chi tiết Chat
+              </button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        console.error("Error loading transactions:", err);
+      }
+    }
         const resp = await fetch(`/api/admin/ai-traces/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await resp.json();
         if (data.success) contentArea.innerText = JSON.stringify(data.history, null, 2);

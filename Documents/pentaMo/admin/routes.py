@@ -517,6 +517,44 @@ async def get_all_appointments(
     }
 
 
+@router.get("/transactions", tags=["transactions"])
+async def get_all_transactions(
+    current_user: TokenPayload = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Lấy danh sách toàn bộ giao dịch chốt đơn thành công (Admin)"""
+    from db.models import Transactions, SellerListings, Users
+    logger.info(f"Admin {current_user.username} requested all transactions")
+    
+    # Join with listings and users to get full details
+    results = db.query(
+        Transactions, 
+        SellerListings.brand, 
+        SellerListings.model_line, 
+        Users.full_name.label("buyer_name")
+    ).join(SellerListings, Transactions.listing_id == SellerListings.id)\
+     .join(Users, Transactions.buyer_id == Users.id)\
+     .order_by(Transactions.created_at.desc()).all()
+    
+    transactions_list = []
+    for tx, brand, model_line, buyer_name in results:
+        transactions_list.append({
+            "id": tx.id,
+            "vehicle": f"{brand} {model_line}",
+            "buyer": buyer_name,
+            "amount": float(tx.amount),
+            "status": tx.status,
+            "conversation_id": tx.conversation_id,
+            "created_at": tx.created_at.isoformat()
+        })
+        
+    return {
+        "success": True,
+        "count": len(transactions_list),
+        "transactions": transactions_list
+    }
+
+
 @router.get("/conversations/{conversation_id}/embeddings", tags=["vectors"])
 async def get_conversation_embeddings(
     conversation_id: str,
