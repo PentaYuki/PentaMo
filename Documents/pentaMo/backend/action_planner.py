@@ -12,12 +12,14 @@ class ActionPlanner:
     
     def __init__(self):
         # Keywords for intent detection
-        self.appointment_keywords = ["đặt lịch", "xem xe", "hẹn", "chiều nay", "mai", "thứ"]
-        self.chat_keywords = ["liên hệ", "gọi điện", "zalo", "số điện thoại", "inbox"]
+        self.appointment_keywords = ["đặt lịch", "xem xe", "hẹn", "chiều nay", "mai", "thứ", "xem con này", "qua xem"]
+        self.chat_keywords = ["liên hệ", "gọi điện", "zalo", "số điện thoại", "inbox", "nhắn chủ xe"]
         self.risk_keywords = ["chuyển tiền", "đặt cọc", "stk", "tài khoản", "bank"]
-        self.doc_risk_keywords = ["giấy tờ", "hồ sơ", "chưa sang tên", "cầm cố", "chính chủ"]
-        self.intermediary_keywords = ["trung gian", "môi giới", "bên thứ ba", "trực tiếp"]
-        self.purchase_keywords = ["chốt", "mua luôn", "lấy con này", "quyết định mua", "thanh toán", "cọc"]
+        self.doc_risk_keywords = ["giấy tờ", "hồ sơ", "chưa sang tên", "cầm cố", "chính chủ", "rút hồ sơ"]
+        self.intermediary_keywords = ["trung gian", "môi giới", "bên thứ ba", "trực tiếp", "không cần bên thứ ba", "đứng giữa"]
+        self.purchase_keywords = ["chốt", "mua luôn", "lấy con này", "quyết định mua", "cọc", "chốt đơn", "lấy xe này", "thanh toán luôn", "lập hóa đơn", "chốt giá"]
+        # NOTE: "mua xe", "mua", "thanh toán", "giao dịch" are INTENTIONALLY excluded.
+        # They are too broad and conflict with search intent ("mua xe giá 15 triệu" = search, not purchase).
 
     def decide_next_action(
         self, 
@@ -31,7 +33,13 @@ class ActionPlanner:
         msg_lower = user_message.lower()
         
         # 0. Purchase / Closing Intent (Priority)
-        if any(kw in msg_lower for kw in self.purchase_keywords):
+        # GUARD: Only trigger purchase if NO price/search signals are present
+        # "mua xe giá 15 triệu" → search intent, NOT purchase intent
+        import re
+        has_price = bool(re.search(r'\d+\s*(?:triệu|tr)', msg_lower))
+        has_search_signal = any(kw in msg_lower for kw in ["tìm", "có không", "có xe nào", "giá bao nhiêu", "tầm"])
+        
+        if any(kw in msg_lower for kw in self.purchase_keywords) and not has_price and not has_search_signal:
             listing_id = state.get("listing_context", {}).get("id")
             buyer_id = state.get("participants", {}).get("buyer_id")
             if listing_id and buyer_id:
@@ -40,13 +48,13 @@ class ActionPlanner:
         
         # 1. CASE C2: Document Risk Detection
         if any(kw in msg_lower for kw in self.doc_risk_keywords):
-            if "chưa sang tên" in msg_lower or "chờ rút hồ sơ" in msg_lower:
+            if any(term in msg_lower for term in ["chưa sang tên", "chờ rút hồ sơ", "chờ hồ sơ"]):
                 return "detect_risks", {"type": "DOCUMENT_RISK", "level": "HIGH"}, "Phát hiện rủi ro pháp lý về giấy tờ xe (chưa sang tên/đang chờ hồ sơ)."
 
         # 2. CASE C3: Intermediary Resistance
         if any(kw in msg_lower for kw in self.intermediary_keywords):
-            if "không muốn qua trung gian" in msg_lower or "chỉ bán trực tiếp" in msg_lower:
-                return "handoff_to_human", {"reason": "SELLER_RESISTANCE"}, "Người bán từ chối làm việc qua bên thứ ba, cần nhân viên vào xử lý khéo léo."
+            if any(term in msg_lower for term in ["không muốn qua trung gian", "không cần bên thứ ba", "trực tiếp", "số điện thoại người mua"]):
+                return "handoff_to_human", {"reason": "SELLER_RESISTANCE"}, "Người bán từ chối làm việc qua bên thứ ba hoặc yêu cầu kết nối trực tiếp."
 
         # 3. CASE C1: Price Tension / Negotiation
         budget_obj = state.get("budget")
@@ -77,7 +85,7 @@ class ActionPlanner:
             
             if listing_id and seller_id and buyer_id:
                 params = {"listing_id": listing_id, "buyer_id": buyer_id, "seller_id": seller_id}
-                return "create_chat_bridge", params, "Khách hàng muốn kết nối trực tiếp với người bán."
+                return "create_chat_channel", params, "Khách hàng muốn kết nối trực tiếp với người bán."
 
         return None, {}, "Tiếp tục tư vấn thông thường."
 

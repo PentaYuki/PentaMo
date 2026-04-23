@@ -29,12 +29,14 @@ async def get_conversations(
         # Determine the "other" person
         other_id = c.seller_id if c.buyer_id == uid else c.buyer_id
         other_name = "Anonymous"
+        is_ai = c.seller_id is None
+        
         if other_id:
             other_user = db.query(Users).filter(Users.id == other_id).first()
             other_name = other_user.full_name if other_user else "Unknown User"
         
         listing = db.query(SellerListings).filter(SellerListings.id == c.listing_id).first()
-        if c.seller_id is None:
+        if is_ai:
             listing_title = "🛡️ Hỗ trợ PentaMo (AI)"
             other_name = "An (AI Assistant)"
         else:
@@ -48,7 +50,10 @@ async def get_conversations(
             "other_name": other_name,
             "listing_title": listing_title,
             "last_message": last_msg.text if last_msg else "Chưa có tin nhắn",
-            "updated_at": c.updated_at.isoformat()
+            "updated_at": c.updated_at.isoformat(),
+            "is_ai": is_ai,
+            "listing_id": c.listing_id,
+            "lead_stage": c.lead_stage.value if c.lead_stage else None
         })
     return {"success": True, "conversations": results}
 
@@ -85,6 +90,10 @@ async def send_message(
         result = orchestrator.process_message(conversation_id, text, state, db=db)
         ai_response_text = result.get("message")
         
+        # Update conversation state
+        new_state = result.get("state", state)
+        conv.state = new_state
+        
         # Save AI message to DB
         ai_msg = ChatMessages(
             conversation_id=conversation_id,
@@ -96,11 +105,21 @@ async def send_message(
         
     db.commit()
     
-    return {
+    # Build response with message_id and ui_commands
+    response_data = {
         "success": True, 
         "message": "Tin nhắn đã được gửi",
         "response": ai_response_text
     }
+    
+    if ai_response_text and conv.seller_id is None:
+        db.refresh(ai_msg)
+        response_data["message_id"] = ai_msg.id
+        response_data["ui_commands"] = result.get("ui_commands", [])
+        response_data["mode"] = result.get("mode")
+        response_data["source"] = result.get("source")
+    
+    return response_data
 
 @router.get("/{conversation_id}/messages")
 async def get_messages(

@@ -647,3 +647,202 @@ async def verify_image_ocr(
             "listing_id": listing_id,
             "timestamp": datetime.utcnow().isoformat()
         }
+
+
+# ==================== LLM Configuration (Hot-Swap) ====================
+
+@router.get("/config/llm", tags=["config"])
+async def get_llm_config(
+    current_user: TokenPayload = Depends(require_admin)
+):
+    """Get current LLM configuration (main + review)"""
+    from services.llm_client import LLMClient, get_review_llm, GeminiProvider, OllamaProvider
+    
+    main_config = LLMClient.get_current_config()
+    
+    review = get_review_llm()
+    review_config = {"provider": "none", "model": "N/A"}
+    if isinstance(review, GeminiProvider):
+        review_config = {"provider": "gemini", "model": review.model_name}
+    elif isinstance(review, OllamaProvider):
+        review_config = {"provider": "ollama", "model": review.model}
+    
+    return {
+        "success": True,
+        "main_llm": main_config,
+        "review_llm": review_config,
+        "available_providers": ["gemini", "ollama"],
+    }
+
+
+@router.post("/config/llm/main", tags=["config"])
+async def swap_main_llm(
+    provider: str,
+    model: Optional[str] = None,
+    current_user: TokenPayload = Depends(require_admin)
+):
+    """Hot-swap the main LLM provider (no restart required)"""
+    from services.llm_client import LLMClient
+    logger.warning(f"Admin {current_user.username} swapping main LLM to {provider}/{model}")
+    result = LLMClient.hot_swap_provider(provider, model)
+    return result
+
+
+@router.post("/config/llm/review", tags=["config"])
+async def swap_review_llm(
+    provider: str,
+    model: Optional[str] = None,
+    current_user: TokenPayload = Depends(require_admin)
+):
+    """Hot-swap the review/gate LLM (used for FAISS content moderation)"""
+    from services.llm_client import set_review_llm
+    logger.warning(f"Admin {current_user.username} swapping review LLM to {provider}/{model}")
+    result = set_review_llm(provider, model)
+    return result
+
+
+# ==================== FAISS Pending Review Queue ====================
+
+@router.get("/faiss/pending", tags=["faiss"])
+async def get_faiss_pending_reviews(
+    current_user: TokenPayload = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Get all FAISS entries pending admin review"""
+    from db.models import FAISSPendingReview
+    
+    pending = db.query(FAISSPendingReview).filter(
+        FAISSPendingReview.status == "PENDING"
+    ).order_by(FAISSPendingReview.created_at.desc()).all()
+    
+    return {
+        "success": True,
+        "count": len(pending),
+        "reviews": [{
+            "id": r.id,
+            "question": r.question,
+            "answer_original": r.answer_original,
+            "answer_refined": r.answer_refined,
+            "mode": r.mode,
+            "reason": r.reason,
+            "created_at": r.created_at.isoformat()
+        } for r in pending]
+    }
+
+
+@router.post("/faiss/review/{review_id}", tags=["faiss"])
+async def review_faiss_entry(
+    review_id: str,
+    action: str,  # "approve" or "reject"
+    edited_answer: Optional[str] = None,
+    current_user: TokenPayload = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Admin reviews a pending FAISS entry.
+    action='approve': Save to FAISS (using edited_answer if provided)
+    action='reject': Discard the entry
+    """
+    from db.models import FAISSPendingReview
+    from services.faiss_memory import get_faiss_memory
+    
+    review = db.query(FAISSPendingReview).filter(FAISSPendingReview.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    if action == "approve":
+        final_answer = edited_answer or review.answer_refined or review.answer_original
+        memory = get_faiss_memory()
+        memory.add(review.question, final_answer, review.mode)
+        review.status = "APPROVED"
+        review.answer_refined = final_answer
+        logger.info(f"Admin {current_user.username} approved FAISS entry: {review.question[:50]}")
+    elif action == "reject":
+        review.status = "REJECTED"
+        logger.info(f"Admin {current_user.username} rejected FAISS entry: {review.question[:50]}")
+    else:
+        raise HTTPException(status_code=400, detail="action must be 'approve' or 'reject'")
+    
+    review.reviewed_by = current_user.user_id
+    review.reviewed_at = datetime.utcnow()
+    db.commit()
+    
+    return {"success": True, "action": action, "review_id": review_id}
+
+
+# ==================== Admin Direct Chat ====================
+
+@router.post("/chat/{conversation_id}/send", tags=["chat"])
+async def admin_send_message(
+    conversation_id: str,
+    text: str,
+    current_user: TokenPayload = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Admin sends a message directly to a customer in a conversation"""
+    from db.models import Conversations, ChatMessages
+    
+    conv = db.query(Conversations).filter(Conversations.id == conversation_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Create admin message
+    admin_msg = ChatMessages(
+        conversation_id=conversation_id,
+        sender_id=current_user.user_id,
+        sender_type="admin",
+        text=text
+    )
+    db.add(admin_msg)
+    conv.updated_at = datetime.utcnow()
+    
+    # If this was an AI-only conversation, assign admin as seller
+    if conv.seller_id is None:
+        conv.seller_id = current_user.user_id
+    
+    db.commit()
+    db.refresh(admin_msg)
+    
+    logger.info(f"Admin {current_user.username} sent message in conv {conversation_id}")
+    
+    return {
+        "success": True,
+        "message_id": admin_msg.id,
+        "text": text,
+        "timestamp": admin_msg.timestamp.isoformat()
+    }
+
+
+@router.get("/chat/conversations", tags=["chat"])
+async def admin_get_all_conversations(
+    current_user: TokenPayload = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Get ALL conversations for admin view (not just their own)"""
+    from db.models import Conversations, ChatMessages, Users, SellerListings
+    
+    convs = db.query(Conversations).order_by(Conversations.updated_at.desc()).limit(50).all()
+    
+    results = []
+    for c in convs:
+        buyer = db.query(Users).filter(Users.id == c.buyer_id).first() if c.buyer_id else None
+        seller = db.query(Users).filter(Users.id == c.seller_id).first() if c.seller_id else None
+        listing = db.query(SellerListings).filter(SellerListings.id == c.listing_id).first() if c.listing_id else None
+        
+        last_msg = db.query(ChatMessages).filter(
+            ChatMessages.conversation_id == c.id
+        ).order_by(ChatMessages.timestamp.desc()).first()
+        
+        results.append({
+            "id": c.id,
+            "buyer_name": buyer.full_name if buyer else "Unknown",
+            "seller_name": seller.full_name if seller else "AI Assistant",
+            "is_ai": c.seller_id is None,
+            "listing_title": f"{listing.brand} {listing.model_line}" if listing else "Hỗ trợ chung",
+            "last_message": last_msg.text[:80] if last_msg else "Chưa có tin nhắn",
+            "lead_stage": c.lead_stage.value if c.lead_stage else None,
+            "updated_at": c.updated_at.isoformat()
+        })
+    
+    return {"success": True, "conversations": results}
+

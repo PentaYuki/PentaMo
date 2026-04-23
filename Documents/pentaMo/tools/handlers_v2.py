@@ -6,6 +6,7 @@ Used by the new orchestrator to perform actual searches and operations
 import json
 import logging
 import os
+import uuid
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
@@ -87,7 +88,20 @@ def search_listings(
             query = query.filter(SellerListings.price <= price_max)
         
         if province:
-            query = query.filter(SellerListings.province.ilike(f"%{province}%"))
+            # Fuzzy province matching to handle DB inconsistencies
+            # DB may have: "Hồ Chí Minh", "TP. HCM", "TP. Hồ Chí Minh", "TP Hồ Chí Minh"
+            province_variants = [f"%{province}%"]
+            province_lower = province.lower()
+            if "hồ chí minh" in province_lower or "hcm" in province_lower:
+                province_variants = [
+                    "%Hồ Chí Minh%", "%HCM%", "%Sài Gòn%", "%Saigon%"
+                ]
+            elif "hà nội" in province_lower:
+                province_variants = ["%Hà Nội%", "%Ha Noi%"]
+            elif "đà nẵng" in province_lower:
+                province_variants = ["%Đà Nẵng%", "%Da Nang%"]
+            
+            query = query.filter(or_(*[SellerListings.province.ilike(v) for v in province_variants]))
         
         if year_min is not None:
             query = query.filter(SellerListings.model_year >= year_min)
@@ -112,6 +126,18 @@ def search_listings(
         # Format results
         listings = []
         for r in results:
+            # Get seller info for contact display
+            seller_name = None
+            seller_phone = None
+            try:
+                from db.models import Users
+                seller = db.query(Users).filter(Users.id == r.seller_id).first()
+                if seller:
+                    seller_name = seller.full_name
+                    seller_phone = seller.phone
+            except Exception:
+                pass
+            
             listings.append({
                 "id": r.id,
                 "brand": r.brand,
@@ -123,9 +149,16 @@ def search_listings(
                 "province": r.province,
                 "address_detail": r.address_detail or "Contact seller",
                 "seller_id": r.seller_id,
+                "seller_name": seller_name,
+                "seller_phone": seller_phone,
+                "description": getattr(r, 'description', None),
+                "seller_notes": getattr(r, 'seller_notes', None),
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "verification_status": r.verification_status.value if r.verification_status else "pending",
-                "image_front": safe_public_url(r.image_front)
+                "image_front": safe_public_url(r.image_front),
+                "image_back": safe_public_url(r.image_back),
+                "image_left": safe_public_url(r.image_left),
+                "image_right": safe_public_url(r.image_right),
             })
         
         logger.info(f"Search found {len(listings)} listings")
@@ -245,9 +278,19 @@ def book_appointment(
             return {"success": False, "error": "Listing not found"}
             
         # Create real appointment
+        buyer_id = "unknown"
+        if conversation_id:
+            from db.models import Conversations
+            conv = db.query(Conversations).filter(Conversations.id == conversation_id).first()
+            if conv:
+                buyer_id = conv.buyer_id
+            else:
+                # Fallback to legacy split logic if no conv record found
+                buyer_id = conversation_id.split('_')[0] if '_' in conversation_id else conversation_id
+        
         new_apt = Appointments(
             listing_id=listing_id,
-            buyer_id=conversation_id.split('_')[0] if conversation_id else "unknown", # Mocking buyer extraction
+            buyer_id=buyer_id,
             seller_id=listing.seller_id,
             appointment_date=datetime.fromisoformat(preferred_date.replace('Z', '')) if preferred_date else datetime.utcnow() + timedelta(days=1),
             location=preferred_location or listing.province,
@@ -372,7 +415,8 @@ def parse_user_intent_for_search(user_message: str) -> Dict[str, Any]:
         "province": None,
         "year_min": None,
         "condition": None,
-        "query_str": None
+        "query_str": None,
+        "car_detected": False
     }
     
     try:
@@ -385,16 +429,36 @@ def parse_user_intent_for_search(user_message: str) -> Dict[str, Any]:
                 params["brands"] = [b]
                 break
         
-        # Models often used as query string
-        params["query_str"] = user_message.strip()
+        # Model-specific keywords that are strong search signals
+        model_keywords = [
+            "vision", "lead", "air blade", "exciter", "winner",
+            "wave", "sirius", "nvx", "janus", "grande", "nozza", "blade",
+            "raider", "satria", "vario", "pcx", "freego", "latte",
+            "elizabeth", "attila", "angela", "zip", "liberty", "medley",
+            "sprint", "gts", "primavera", "tay ga", "côn tay"
+        ]
+        # Short model names need word boundary matching (sh, ab, lx, số)
+        short_model_keywords = ["sh", "ab", "lx", "số"]
+        
+        import re as _re
+        detected_model = None
+        for m in model_keywords:
+            if m in msg_lower:
+                detected_model = m
+                break
+        
+        if not detected_model:
+            for m in short_model_keywords:
+                # Use word boundary to prevent 'sh' matching inside 'shop'
+                if _re.search(rf'\b{_re.escape(m)}\b', msg_lower):
+                    detected_model = m
+                    break
+        
+        # NOTE: Do NOT set query_str to raw user_message anymore.
+        # Only set it if meaningful search terms remain after cleaning.
         
         # Extract price range (natural language)
-        # Handle "từ X đến Y", "trong khoảng X-Y", "dưới X"
         import re
-        price_patterns = [
-            (r'(?:dưới|tầm|khoảng)\s*(\d+)\s*(?:triệu|tr)', 'max'),
-            (r'(\d+)\s*(?:triệu|tr)', 'exact')
-        ]
         
         # Look for numbers with 'triệu' or 'tr'
         found_prices = re.findall(r'(\d+)\s*(?:triệu|tr)', msg_lower)
@@ -404,7 +468,7 @@ def parse_user_intent_for_search(user_message: str) -> Dict[str, Any]:
         elif len(found_prices) == 1:
             params["price_max"] = int(found_prices[0]) * 1_000_000
 
-        # Refined query_str: Remove common greeting junk and PUNCTUATION
+        # Build query_str ONLY from model-relevant terms
         clean_query = msg_lower
         # 1. Strip punctuation
         import string
@@ -413,14 +477,44 @@ def parse_user_intent_for_search(user_message: str) -> Dict[str, Any]:
             
         # 2. Strip junk words
         junk = [
-            "em ơi", "anh ơi", "chị ơi", "cho anh", "cho em", "anh cần", "em hãy",
+            "em ơi", "anh ơi", "chị ơi", "cho anh", "cho em", "anh cần", "em hãy", "cho tôi",
             "tìm mua", "mua xe", "ngân sách", "tầm", "khoảng", "có con nào", "bên mình",
-            "cần tìm", "kiếm", "chiếc", "con", "xe", "anh", "em", "tìm", "mua", "cho", "cần"
+            "cần tìm", "kiếm", "chiếc", "con", "xe", "anh", "em", "tìm", "mua", "cho", "cần",
+            "tôi", "cái", "này", "đó", "kia", "chào", "muốn", "giá", "gía", "bạn", "mình",
+            "xem", "hỏi", "được", "không", "nhỉ", "nhé", "nha", "ạ", "dạ", "với", "là",
+            "chao", "muon", "gia", "ban", "minh", "duoc", "khong", "nhe", "co",
+            "ở", "tại", "bên", "có", "nào", "gì", "thế", "thì", "nữa", "hay", "và",
+            "học", "về", "tư vấn", "cho biết", "giúp", "hỏi", "thắc mắc",
+            "thành phố", "hồ chí minh", "hà nội", "đà nẵng", "cần thơ",
+            "sài gòn", "hải phòng", "bình dương", "đồng nai", "hcm",
+            # Extra conversational junk
+            "đi", "nhà", "nghỉ", "nghĩ", "làm", "sao", "như", "vậy", "lắm",
+            "quá", "rất", "cũng", "nhưng", "mà", "rồi", "ơi", "nhá",
+            # Shopping/browsing junk — NOT vehicle model names
+            "shop", "rẻ", "đắt", "tốt", "đẹp", "chất lượng", "giá rẻ", "giá cả",
+            "những", "máy", "loại", "dòng", "nên", "ra sao", "thế nào", "bao nhiêu",
+            "bên bạn", "bên shop", "cửa hàng", "liệt kê", "helo", "hello", "hi",
+            "xin chào", "hàng", "ngang", "phù hợp"
         ]
         # Sort junk by length descending to avoid partial matches
         junk.sort(key=len, reverse=True)
+        
+        # Normalize for junk matching
+        from unidecode import unidecode
+        
         for word in junk:
-            clean_query = clean_query.replace(word, " ")
+            # Match both accented and unaccented versions
+            norm_word = unidecode(word)
+            
+            # Pattern for accented
+            p1 = re.compile(rf'\b{re.escape(word)}\b', re.IGNORECASE)
+            clean_query = p1.sub(" ", clean_query)
+            
+            # Pattern for unaccented
+            if norm_word != word:
+                p2 = re.compile(rf'\b{re.escape(norm_word)}\b', re.IGNORECASE)
+                clean_query = p2.sub(" ", clean_query)
+
         
         # 3. Strip brand name if already detected to allow focus on model
         if params["brands"]:
@@ -431,28 +525,59 @@ def parse_user_intent_for_search(user_message: str) -> Dict[str, Any]:
         clean_query = re.sub(r'\d+\s*(?:triệu|tr)', '', clean_query)
         
         # Final cleanup: collapse spaces
-        params["query_str"] = " ".join(clean_query.split())
+        cleaned = " ".join(clean_query.split()).strip()
+        
+        # KEY FIX: Only set query_str if there are actual meaningful terms left
+        # (brand names, model names, or at least 2+ chars of meaningful content)
+        if cleaned and len(cleaned) >= 2:
+            # Check if cleaned string contains any known model keyword
+            has_model_term = any(m in cleaned.lower() for m in model_keywords)
+            # Also check short model keywords with word boundary
+            if not has_model_term:
+                has_model_term = any(_re.search(rf'\b{_re.escape(m)}\b', cleaned.lower()) for m in short_model_keywords)
+            if has_model_term:
+                params["query_str"] = cleaned
+            else:
+                # Don't use random leftover words as query_str — they cause false matches
+                params["query_str"] = None
+        else:
+            params["query_str"] = None
+        
+        # If a model keyword was detected, always include it in query_str
+        if detected_model and not params["query_str"]:
+            params["query_str"] = detected_model
         
         # Extract year (simple pattern)
         year_pattern = r'(201\d|202\d)'
         years = re.findall(year_pattern, msg_lower)
         if years:
             params["year_min"] = int(years[0])
+
+        # Detect car keywords
+        car_keywords = ["ô tô", "oto", "car", "suv", "hatchback", "sedan", "innova", "vios", "ranger"]
+        if any(kw in msg_lower for kw in car_keywords):
+            params["car_detected"] = True
         
-        # Extract province keywords
+        # Extract province keywords — use broad fuzzy patterns to handle
+        # DB inconsistencies ("Hồ Chí Minh", "TP. HCM", "TP. Hồ Chí Minh")
         provinces_keywords = {
             "hà nội": "Hà Nội",
-            "sài gòn": "TP Hồ Chí Minh",
-            "hcm": "TP Hồ Chí Minh",
-            "tp hồ chí minh": "TP Hồ Chí Minh",
+            "sài gòn": "Hồ Chí Minh",
+            "hcm": "Hồ Chí Minh",
+            "hồ chí minh": "Hồ Chí Minh",
+            "tp hồ chí minh": "Hồ Chí Minh",
+            "thành phố hồ chí minh": "Hồ Chí Minh",
             "hải phòng": "Hải Phòng",
             "đà nẵng": "Đà Nẵng",
             "huế": "Thừa Thiên Huế",
             "cần thơ": "Cần Thơ",
+            "bình dương": "Bình Dương",
+            "đồng nai": "Đồng Nai",
         }
-        for keyword, province in provinces_keywords.items():
+        # Sort by length descending so "thành phố hồ chí minh" matches before "hcm"
+        for keyword in sorted(provinces_keywords.keys(), key=len, reverse=True):
             if keyword in msg_lower:
-                params["province"] = province
+                params["province"] = provinces_keywords[keyword]
                 break
         
         # Extract condition
