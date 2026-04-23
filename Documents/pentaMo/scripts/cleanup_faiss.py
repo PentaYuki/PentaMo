@@ -1,68 +1,55 @@
 """
-Cleanup FAISS - v3 Optimization
-Finds and removes duplicate entries from FAISS indexes and rebuilds them.
+cleanup_faiss.py — FAISS Index Maintenance (v2)
+
+What it does:
+  1. Removes duplicate entries (keyed by question string, case-insensitive)
+  2. Rebuilds the cosine index (IndexFlatIP) from scratch using batch encoding
+  3. Reports stats before and after
+
+Usage:
+    python scripts/cleanup_faiss.py [index_name ...]
+    python scripts/cleanup_faiss.py             # defaults: main + mode_classifier
 """
 
 import sys
-import os
+import logging
 from pathlib import Path
 
-# Add root folder to sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import logging
 from services.faiss_memory import get_faiss_memory
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(name)s  %(message)s")
+logger = logging.getLogger("cleanup_faiss")
 
-def cleanup_index(index_name: str):
-    logger.info(f"Cleaning up FAISS index: {index_name}")
+
+def cleanup_index(index_name: str) -> None:
+    logger.info(f"{'─'*50}")
+    logger.info(f"  Cleaning index: '{index_name}'")
     memory = get_faiss_memory(index_name=index_name)
-    
-    total_before = len(memory.metadata)
-    if total_before == 0:
-        logger.info(f"Index {index_name} is empty. Skipping.")
+
+    before = len(memory.metadata)
+    logger.info(f"  Records before: {before}")
+
+    if before == 0:
+        logger.info("  Index is empty — nothing to do.")
         return
 
-    # 1. Identify duplicates based on query text
-    seen_queries = set()
-    unique_metadata = []
-    
-    for item in memory.metadata:
-        query = item.get("text", "").strip().lower()
-        if query and query not in seen_queries:
-            seen_queries.add(query)
-            unique_metadata.append(item)
-    
-    total_after = len(unique_metadata)
-    
-    if total_after < total_before:
-        logger.info(f"Removing {total_before - total_after} duplicate entries.")
-        
-        # 2. Rebuild index
-        # We need to re-encode all unique texts
-        import faiss # type: ignore
-        import numpy as np
-        
-        # Reset memory object state
-        memory.metadata = unique_metadata
-        memory.index = faiss.IndexFlatL2(memory.dimension)
-        
-        # Re-add entries
-        # (Using a simplified approach here, normally we'd batch encode)
-        texts = [m["text"] for m in unique_metadata]
-        if texts:
-            embeddings = memory.model.encode(texts)
-            memory.index.add(np.array(embeddings).astype('float32'))
-            
-        # 3. Save
-        memory.save()
-        logger.info(f"Index {index_name} cleaned and saved. (Total: {total_after})")
-    else:
-        logger.info(f"No duplicates found in {index_name}.")
+    removed = memory.rebuild_dedup()
+
+    after = len(memory.metadata)
+    logger.info(f"  Duplicates removed : {removed}")
+    logger.info(f"  Records after      : {after}")
+
+    stats = memory.get_stats()
+    logger.info(
+        f"  Breakdown — consultant: {stats['consultant_count']}, "
+        f"trader: {stats['trader_count']}"
+    )
+
 
 if __name__ == "__main__":
-    # Cleanup typical indexes
-    cleanup_index("main")
-    cleanup_index("mode_classifier")
+    targets = sys.argv[1:] if len(sys.argv) > 1 else ["main", "mode_classifier"]
+    for name in targets:
+        cleanup_index(name)
+    logger.info("✓ FAISS cleanup done.")

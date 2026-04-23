@@ -125,6 +125,13 @@ def seed_database():
         print("\n🔄 Seeding sellers...")
         sellers = [
             Users(
+                id="admin-seller-id",
+                full_name="PentaMo Official Admin",
+                phone="0000000000",
+                role=UserRole.ADMIN,
+                location_province="Hồ Chí Minh"
+            ),
+            Users(
                 id=str(uuid.uuid4()),
                 full_name="Nguyễn Văn A",
                 phone="0912345678",
@@ -163,8 +170,9 @@ def seed_database():
         
         # Lưu sellers
         for seller in sellers:
-            existing = session.query(Users).filter(Users.phone == seller.phone).first()
-            if not existing:
+            existing_by_phone = session.query(Users).filter(Users.phone == seller.phone).first()
+            existing_by_id = session.query(Users).filter(Users.id == seller.id).first()
+            if not existing_by_phone and not existing_by_id:
                 session.add(seller)
         
         session.commit()

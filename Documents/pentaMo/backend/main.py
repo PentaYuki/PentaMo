@@ -301,19 +301,18 @@ async def send_message(
         
         return {
             "success": True,
-            "conversation_id": conversation_id,
-            "agent_response": {
-                "mode": agent_response.get("mode", "consultant"),
-                "message": ai_message_text,
-                "source": agent_response.get("source", "llm"),
-            },
-            "state": new_state
+            "response": ai_message_text,
+            "message_id": agent_msg.id,
+            "state": new_state,
+            "mode": agent_response.get("mode"),
+            "source": agent_response.get("source"),
+            "ui_commands": agent_response.get("ui_commands", [])
         }
-    
+        
     except Exception as e:
-        logger.error(f"Error processing message: {e}")
-        db.rollback()
+        logger.error(f"Error processing message: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/conversations")
 async def create_conversation(

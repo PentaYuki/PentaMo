@@ -9,6 +9,7 @@ import logging
 import re
 from typing import Dict, Any, Optional, List, Tuple
 from sqlalchemy.orm import Session
+from db.models import Conversations, ChatMessages # Import Conversations
 from datetime import datetime
 from services.llm_client import llm_client
 from services.faiss_memory import get_faiss_memory
@@ -35,35 +36,49 @@ class AgentOrchestrator:
     """
     
     # System prompts for each mode
-    COMMON_GUIDELINES = (
-        "NGUYÊN TẮC DANH TÍNH: Bạn DUY NHẤT xưng là 'em' và gọi người dùng là 'anh/chị'. "
-        "TUYỆT ĐỐI KHÔNG xưng 'chị', 'tôi', 'mình' hay 'tư vấn viên'. "
-        "NÓI CHUYỆN TỰ NHIÊN: Tránh dùng từ ngữ máy móc, chuyên ngành khô khan (như 'số đăng ký', 'ngày sản xuất' khi mới bắt đầu tìm xe). "
-        "Hãy trả lời như một người bạn am hiểu xe, ngắn gọn, súc tích (dưới 80 từ)."
+    # ------------------------------------------------------------------
+    # Persona & System Prompts — v3.1 (Precise, decisive, zero fluff)
+    # ------------------------------------------------------------------
+
+    _IDENTITY_BLOCK = (
+        "Bạn là An, nhân viên tư vấn bán xe máy của PentaMo.\n"
+        "Quy tắc xưng hô:\n"
+        "- Bạn LUÔN LUÔN xưng là 'em'.\n"
+        "- Bạn LUÔN LUÔN gọi khách hàng là 'Anh' hoặc 'Chị'. (Nếu chưa rõ giới tính thì gọi là 'Anh/Chị').\n"
+        "- Dù khách hàng tự xưng là 'em', 'mình', hay 'tôi', bạn vẫn phải gọi khách là 'Anh' hoặc 'Chị'.\n\n"
+        "Quy tắc tư vấn (Ngắn gọn, Thấu hiểu):\n"
+        "- Tối đa 2-3 câu.\n"
+        "- Nếu khách tìm xe theo nhu cầu (cho sinh viên, phụ nữ, người mới lái, mua cho con): "
+        "HÃY HỎI THĂM 1 câu về vóc dáng hoặc sở thích (xe ga hay xe số) trước khi giới thiệu xe.\n"
+        "- KHÔNG tự nghĩ ra tên xe lạ, chỉ dùng xe phổ biến tại Việt Nam (Honda Vision, Air Blade, Wave, Yamaha Exciter...).\n"
+    )
+
+    _CONTENT_GUARD = (
+        "CẤM: Đề cập đến ô tô (Honda City, Toyota, v.v.) dưới bất kỳ hình thức nào. "
+        "Nếu khách hỏi ô tô → nhắc ngay: PentaMo chỉ chuyên xe máy.\n"
     )
 
     CONSULTANT_SYSTEM = (
-        f"[VAI TRÒ: AN (EM) | KHÁCH HÀNG: ANH/CHỊ]\n"
-        f"Bạn là AN, trợ lý môi giới XE MÁY chuyên nghiệp. {COMMON_GUIDELINES}\n"
-        "QUY TẮC BẮT BUỘC:\n"
-        "1. XƯNG HÔ: Luôn xưng 'em', gọi khách là 'anh/chị'. TUYỆT ĐỐI không gọi khách là 'em'.\n"
-        "2. CẤM TỰ XƯNG 'ANH': Bạn là trợ lý, không phải là người bán hay anh trai. Tuyệt đối không dùng từ 'anh' để chỉ bản thân.\n"
-        "3. GROUNDING: Chỉ nói về xe có trong hệ thống. Không bịa giá."
+        _IDENTITY_BLOCK
+        + _CONTENT_GUARD
+        + "VAI TRÒ: Tư vấn viên kiến thức — giúp anh/chị hiểu về dòng xe, kỹ thuật, "
+        "giấy tờ, bảo dưỡng. Khi chưa đủ thông tin, hỏi đúng 1 câu rõ ràng nhất.\n"
+        "SAU KHI BIẾT NHU CẦU: Đề xuất tìm xe ngay — không vòng vo.\n"
     )
-    
+
     TRADER_SYSTEM = (
-        f"[VAI TRÒ: AN (EM) | KHÁCH HÀNG: ANH/CHỊ]\n"
-        "Bạn là AN, chuyên gia môi giới XE MÁY.\n"
-        "QUY TẮC BẮT BUỘC:\n"
-        "1. XƯNG HÔ: Luôn xưng 'em', gọi 'anh/chị'. Tuyệt đối KHÔNG xưng 'anh' hoặc 'tôi'.\n"
-        "2. ĐỐI TƯỢNG: Bạn đang hỗ trợ anh/chị khách hàng mua xe từ người bán.\n"
-        "3. Nếu là xe của Admin (admin-seller-id), hãy nói: 'Dạ xe này của hệ thống bên em nên cực kỳ đảm bảo ạ'."
+        _IDENTITY_BLOCK
+        + _CONTENT_GUARD
+        + "VAI TRÒ: Môi giới giao dịch — hỗ trợ mua/bán, thương lượng giá, giấy tờ, lịch hẹn.\n"
+        + "KHI KHỚP XE: Đề nghị kết nối buyer-seller hoặc đặt lịch ngay — không chờ khách hỏi.\n"
+        + "KHI XE CỦA HỆ THỐNG (admin): Nói thẳng: "
+        "'Dạ xe này PentaMo đảm bảo 100% giấy tờ. Anh/chị xác nhận chốt là em lập đơn luôn ạ?'\n"
+        + "KHI ĐÀM PHÁN: Nêu khoảng cách giá cụ thể, gợi ý mức trung gian hợp lý.\n"
     )
-    
+
     OUT_OF_SCOPE_RESPONSE = (
-        "Dạ, chuyên môn của em là về xe máy tại PentaMo thôi ạ. "
-        "Mấy vấn đề khác em hơi 'ngáo' chút, anh/chị thông cảm nha. "
-        "Có câu hỏi nào về xe cộ cứ nhắn em hỗ trợ liền ạ!"
+        "Dạ, PentaMo em chỉ hỗ trợ về xe máy thôi ạ. "
+        "Anh/chị có nhu cầu tìm xe hay cần tư vấn kỹ thuật gì cứ hỏi em nhé!"
     )
     
     def __init__(self):
@@ -168,9 +183,34 @@ class AgentOrchestrator:
         Check if message is out of scope or contains sensitive content
         Returns True if safe, False if out of scope
         """
-        out_of_scope_keywords = ["nấu ăn", "thời tiết", "chính trị", "đầu tư chứng khoán", "bóng đá"]
+        out_of_scope_keywords = [
+            "nấu ăn", "thời tiết", "chính trị", "đầu tư chứng khoán", "bóng đá",
+            "nhà nghỉ", "khách sạn", "du lịch", "đi chơi", "phim", "nhạc",
+            "game", "trò chơi", "yêu đương", "tình yêu", "bói", "tử vi",
+            "crypto", "bitcoin", "forex", "bất động sản"
+        ]
         msg_lower = user_message.lower()
+        if any(kw in msg_lower for kw in out_of_scope_keywords):
+            return False
         return True
+    
+    def _is_consultative_intent(self, user_message: str) -> bool:
+        """
+        Detect if user wants to LEARN or get ADVICE about vehicles (not direct search).
+        Consultative questions should go to LLM, not to search.
+        """
+        msg_lower = user_message.lower()
+        consultative_keywords = [
+            "học về", "tìm hiểu", "so sánh", "khác nhau", "ưu điểm", "nhược điểm",
+            "nên mua", "loại nào tốt", "tay ga là gì", "côn tay là gì",
+            "xe tay ga", "xe côn tay", "xe số", "bảo dưỡng", "bảo trì",
+            "thay nhớt", "kinh nghiệm", "lưu ý", "hướng dẫn",
+            "đăng ký xe", "sang tên", "giấy tờ cần", "thủ tục",
+            "tiêu hao nhiên liệu", "tiết kiệm xăng", 
+            "tư vấn", "cho con", "sinh viên", "đi làm", "phụ nữ", 
+            "người già", "lớn tuổi", "cho nam", "cho nữ", "người mới"
+        ]
+        return any(kw in msg_lower for kw in consultative_keywords)
 
     def _evaluate_agentic_metrics(self, state: Dict[str, Any]) -> Dict[str, bool]:
         """Calculate slot coverage for entities"""
@@ -196,26 +236,71 @@ class AgentOrchestrator:
 
     def _perform_search(self, user_message: str) -> Tuple[Optional[str], int, Dict[str, Any]]:
         """
-        If user message indicates a search, perform real database search
+        If user message indicates a search, perform real database search.
         Returns (formatted_results, count, search_params)
+        
+        KEY LOGIC: Only search when user has clear search intent.
+        Non-search messages (greetings, education, off-topic) should NOT trigger search.
         """
-        search_keywords = [
-            "tìm", "có cái nào", "có xe nào", "xe gì", "loại xe", "bao nhiêu tiền", "tầm", "dưới", 
-            "có không", "bên mình có", "hãng", "chiếc", "con", "mẫu"
-        ]
-        
         msg_lower = user_message.lower()
-        if not any(kw in msg_lower for kw in search_keywords):
-            return None, 0, {}
         
-        params = parse_user_intent_for_search(user_message)
-        # Check if any useful params extracted
-        if not any(params.values()):
-            return None, 0, {}
+        # Skip search if it looks like a definitive action (closing/booking)
+        action_keywords = ["chốt", "đặt lịch", "hẹn", "thanh toán", "lập hóa đơn"]
+        if any(kw in msg_lower for kw in action_keywords) and len(msg_lower.split()) < 10:
+             return None, 0, {}
 
+        # Parse structured params from message
+        params = parse_user_intent_for_search(user_message)
+        
+        # ─── INTENT GATE ──────────────────────────────────────────────────
+        # Only proceed with search if user has CLEAR search intent:
+        #   a) Message contains search keywords, OR
+        #   b) Structured params were extracted (price, brand, province, year)
+        # This prevents casual chatter from triggering search + hard return.
+        search_keywords = [
+            "tìm", "có cái nào", "có xe nào", "xe gì", "loại xe", "bao nhiêu tiền",
+            "tầm giá", "dưới", "có không", "bên mình có", "hãng", "chiếc", "mẫu",
+            "bán xe", "giá xe", "mua xe", "có những", "giá cả", "ra sao",
+            "có gì", "xe nào", "liệt kê"
+        ]
+        has_search_keywords = any(kw in msg_lower for kw in search_keywords)
+        has_structured_params = any([
+            params.get("brands"),
+            params.get("price_min"),
+            params.get("price_max"),
+            params.get("year_min"),
+            params.get("condition"),
+            params.get("province"),   # FIX: Added province to trigger real search
+            params.get("query_str"),  # Now only set for model keywords
+        ])
+        
+        # KEY RULE: Search keywords ALONE are not enough.
+        # "tôi muốn mua xe" has search keywords but zero structured params
+        # → should let LLM ask clarifying questions (budget? brand? location?)
+        # Only trigger real search when we have at LEAST one concrete filter.
+        has_search_intent = has_structured_params
+        
+        # Exception: explicit search phrases + province = valid search
+        if has_search_keywords and params.get("province"):
+            has_search_intent = True
+        
+        if not has_search_intent:
+            # BROWSE MODE: If user has search keywords but no specific params,
+            # they want to browse ALL inventory ("có những xe nào", "giá cả ra sao")
+            if has_search_keywords:
+                # Do a broad search with no filters to show inventory
+                params["_has_search_intent"] = True
+                params["_browse_mode"] = True
+            else:
+                # No concrete params, no search keywords — let LLM handle
+                return None, 0, {}
+        
+        # Mark that this was a real search attempt (used by caller for hard return logic)
+        params["_has_search_intent"] = True
+        
         try:
-            clean_q = params.get("query_str") or user_message
-            q_str = clean_q
+            # Only pass query_str if it's meaningful (model keyword)
+            q_str = params.get("query_str") or None
             
             search_result = search_listings(
                 brands=params.get("brands"),
@@ -267,7 +352,72 @@ class AgentOrchestrator:
         summary = llm_client.generate(prompt, temperature=0.3)
         logger.info(f"[{conversation_id}] Memory compacted: {summary}")
         return summary
-    
+
+    def _is_cacheable_response(self, question: str, answer: str) -> bool:
+        """
+        RAG Cache Guard: Returns True ONLY for general knowledge answers
+        that are safe to replay without real-time DB data.
+
+        Blocks caching if answer contains:
+        - Specific prices (numbers + VNĐ/triệu/tr)
+        - Specific listing IDs or vehicle names with model year
+        - Appointment/booking confirmations
+        - Search result counts
+        - Any factual claim that depends on live inventory
+        """
+        import re
+        answer_lower = answer.lower()
+        question_lower = question.lower()
+
+        # Block if answer has specific prices (e.g. "14.500.000 VNĐ", "45 triệu")
+        if re.search(r'\d[\d.,]*\s*(?:vnđ|vnd|đồng|triệu|tr\.?\b)', answer_lower):
+            return False
+
+        # Block if answer has model-year patterns (2019, 2020, 2021, 2022, 2023, 2024)
+        if re.search(r'\b20(1[5-9]|2[0-5])\b', answer):
+            return False
+
+        # Block if answer mentions odometer / km readings
+        if re.search(r'\d+\s*(?:km|k km)', answer_lower):
+            return False
+
+        # Block if it's about finding specific results
+        if re.search(r'(?:tìm thấy|kết quả|em thấy|có \d+ xe)', answer_lower):
+            return False
+
+        # Block booking/appointment confirmations
+        booking_signals = ["lịch hẹn", "đặt lịch", "xác nhận", "chốt đơn", "hóa đơn", "appointment"]
+        if any(s in answer_lower for s in booking_signals):
+            return False
+
+        # Block if question is clearly inventory search
+        search_signals = ["tìm", "có xe nào", "bên mình có", "giá bao nhiêu", "tầm", "dưới", "mua xe"]
+        if any(s in question_lower for s in search_signals):
+            return False
+
+        # Safe to cache: general brand info, maintenance, paperwork, persona Q&A
+        return True
+
+
+    def _apply_pronoun_filter(self, user_message: str, ai_response: str) -> str:
+        """Helper to dynamically adjust pronouns based on user message"""
+        user_msg_lower = user_message.lower()
+        target_pronoun = None
+        
+        if "anh" in user_msg_lower and "chị" not in user_msg_lower:
+            target_pronoun = "anh"
+        elif "chị" in user_msg_lower and "anh" not in user_msg_lower:
+            target_pronoun = "chị"
+            
+        if target_pronoun:
+            # Case-insensitive replacement for various forms of "anh/chị"
+            patterns = ["anh/chị", "Anh/chị", "anh/Chị", "Anh/Chị", "ANH/CHỊ"]
+            for p in patterns:
+                ai_response = ai_response.replace(p, target_pronoun if p[0].islower() else target_pronoun.capitalize())
+        
+        return ai_response
+
+
     def process_message(
         self,
         conversation_id: str,
@@ -296,8 +446,9 @@ class AgentOrchestrator:
         if not self._check_safety(user_message):
             logger.info(f"[{conversation_id}] Out of scope detected")
             evaluation_service.log_event("safety")
+            msg = self.OUT_OF_SCOPE_RESPONSE
             return {
-                "message": self.OUT_OF_SCOPE_RESPONSE,
+                "message": self._apply_pronoun_filter(user_message, msg),
                 "mode": "consultant",
                 "source": "safety",
                 "state": current_state
@@ -305,6 +456,21 @@ class AgentOrchestrator:
 
         # 2. Update Contextual State
         updated_state = self._update_state(user_message, current_state)
+        
+        # 2b. Sync Participants & Listing from DB if available
+        if db:
+            from tools.handlers_v2 import get_listing_detail # Local import to avoid circular dependency
+            conv = db.query(Conversations).filter(Conversations.id == conversation_id).first()
+            if conv:
+                if "participants" not in updated_state:
+                    updated_state["participants"] = {"buyer_id": conv.buyer_id, "seller_id": conv.seller_id}
+                
+                # IMPORTANT: If listing_id exists in DB but not in context, fetch it
+                if conv.listing_id and ("listing_context" not in updated_state or not updated_state["listing_context"]):
+                    detail = get_listing_detail(conv.listing_id, db=db)
+                    if detail.get("success"):
+                        updated_state["listing_context"] = detail["listing"]
+                        updated_state["listing_id"] = conv.listing_id
         
         # 3. Proactive Risk Analysis & Metrics (Tier 2/3 Evaluation)
         risk_result = detect_risks(user_message, conversation_id=conversation_id, db=db)
@@ -315,17 +481,38 @@ class AgentOrchestrator:
         updated_state["turn_count"] = updated_state.get("turn_count", 0) + 1
         
         # 4. Check for Real Search (Early execution to update context)
-        search_msg, search_count, search_params = self._perform_search(user_message)
+        # Educational/Consultative intent bypass — if user wants to LEARN or get ADVICE, skip search, go to LLM
+        if self._is_consultative_intent(user_message):
+            logger.info(f"[{conversation_id}] Consultative intent detected — skipping search")
+            search_msg, search_count, search_params = None, 0, {}
+        else:
+            search_msg, search_count, search_params = self._perform_search(user_message)
+        search_context: str = ""
+
         if search_params and search_count == 1 and "auto_listing_context" in search_params:
             updated_state["listing_context"] = search_params["auto_listing_context"]
-            
+
+        # Hard return when search was INTENTIONALLY attempted but found NOTHING.
+        # Only applies when user had clear search intent (price/brand/model query).
+        # For casual messages that accidentally matched, let LLM handle.
+        if (search_params 
+            and search_count == 0 
+            and search_params.get("_has_search_intent")
+            and not search_params.get("car_detected")):
+            logger.info(f"[{conversation_id}] Intentional search returned 0 results — hard return")
+            evaluation_service.log_event("search_empty")
+            mode = self._detect_mode(user_message, updated_state)
+            updated_state["mode"] = mode
+            msg = "Dạ em không tìm thấy xe phù hợp trong hệ thống ạ. Anh/chị muốn điều chỉnh tiêu chí (hãng, giá, khu vực) không ạ?"
+            return {
+                "message": self._apply_pronoun_filter(user_message, msg),
+                "mode": mode,
+                "source": "search_empty",
+                "state": updated_state
+            }
+
         if db:
             MemoryService(db).auto_compact_memory(conversation_id)
-
-        # 4. Initialize search state
-        search_params = {}
-        search_count = 0
-        search_context = ""
         
         # 5. Action Planning (Proactive Agent)
         tool_msg = None
@@ -335,7 +522,7 @@ class AgentOrchestrator:
             escalation = handoff_to_human(conversation_id, f"High risk detected: {updated_state['risks'].get('risks')}")
             updated_state["next_best_action"] = {"action": "HANDOFF", "reason": "High risk detected via detect_risks tool."}
             return {
-                "message": escalation.get("message"),
+                "message": self._apply_pronoun_filter(user_message, escalation.get("message")),
                 "mode": "trader",
                 "source": "risk_escalation",
                 "state": updated_state
@@ -353,6 +540,8 @@ class AgentOrchestrator:
                 # Execute Tool
                 tool_result = {}
                 if tool_name == "book_appointment":
+                    tool_params["conversation_id"] = conversation_id
+                    tool_params["db"] = db
                     tool_result = book_appointment(**tool_params)
                     if tool_result.get("success"):
                         updated_state["lead_stage"] = "APPOINTMENT"
@@ -378,52 +567,82 @@ class AgentOrchestrator:
                     evaluation_service.log_event(f"tool_{tool_name}")
                     # If we found a critical action, we can skip
                     if tool_name in ["book_appointment", "create_chat_channel", "create_purchase_order_and_handoff"]:
-                        updated_state["next_best_action"] = {"action": "FOLLOW_UP", "reason": f"Executed tool: {tool_name}"}
+                        # BUG FIX: Add ui_commands to let frontend switch pages/modals
+                        ui_commands = []
+                        if tool_name == "book_appointment":
+                            ui_commands.append({"action": "SWITCH_SECTION", "params": {"section": "appointments"}})
+                        elif tool_name == "create_chat_channel":
+                            ui_commands.append({"action": "SWITCH_SECTION", "params": {"section": "chat-list"}})
+                        elif tool_name == "create_purchase_order_and_handoff":
+                            ui_commands.append({"action": "SWITCH_SECTION", "params": {"section": "chat-list"}}) # View in message list
+                            ui_commands.append({"action": "OPEN_RECEIPT", "params": {"tx_id": updated_state.get("transaction_id")}})
+
                         return {
-                            "message": tool_msg,
+                            "message": self._apply_pronoun_filter(user_message, tool_msg),
                             "mode": "trader",
                             "source": "tool",
                             "tool_name": tool_name,
                             "state": updated_state,
-                            "decision_reason": decision_reason
+                            "decision_reason": decision_reason,
+                            "ui_commands": ui_commands
                         }
 
-        # 5. Check for Real Search
-        search_msg, search_count, search_params = self._perform_search(user_message)
-        if search_params and search_count == 0:
-            search_context = f"Thông tin tìm kiếm: Đã tra cứu Database PentaMo nhưng KHÔNG TÌM THẤY xe nào khớp với {str(search_params)}."
-
+        # 5. Return search results if found (results from the single search call in step 4)
+        # BUG FIX #4: no second call to _perform_search — reuse search_msg/count/params from above
         if search_msg and search_count > 0:
             evaluation_service.log_event("search")
+            # NOTE: Do NOT cache raw search snippets into FAISS —
+            # structured listing data is too specific to reuse semantically.
             return {
-                "message": search_msg,
+                "message": self._apply_pronoun_filter(user_message, search_msg),
                 "mode": "trader",
                 "source": "search",
-                "state": {**updated_state, "mode": "trader"}
+                "state": {**updated_state, "mode": "trader"},
+                "ui_commands": [{
+                    "action": "AUTO_SEARCH",
+                    "params": search_params
+                }]
             }
+
+        # If car_detected, set context warning (only case left where we proceed to LLM)
+        if search_params and search_params.get("car_detected"):
+            search_context = "HỆ THỐNG CẢNH BÁO: Khách hàng đang hỏi về Ô TÔ. PentaMo KHÔNG bán ô tô. Hãy nhắc nhở khách hàng bạn chỉ chuyên về XE MÁY và không được giới thiệu bất kỳ mẫu ô tô nào."
 
         mode = self._detect_mode(user_message, updated_state)
         updated_state["mode"] = mode
-        
-        # 5. Search FAISS Cache
-        threshold = settings.vector_search_threshold if hasattr(settings, 'vector_search_threshold') else 0.8
-        cached_answer = self.memory.search(user_message, mode=mode, threshold=threshold)
-        if cached_answer:
-            evaluation_service.log_event("faiss")
-            return {
-                "message": cached_answer,
-                "mode": mode,
-                "source": "faiss",
-                "state": updated_state
-            }
+
+        # ── FAISS Semantic Cache ──────────────────────────────────────────────
+        # RAG rule: ONLY use cache when search was NOT triggered.
+        # If search_params is populated, the user is asking about real inventory
+        # data → never serve a cached generic answer (hallucination risk).
+        faiss_applicable = not bool(search_params)  # skip cache if search ran
+        cached_answer = None
+
+        if faiss_applicable:
+            threshold = getattr(settings, 'vector_search_threshold', 0.82)
+            cached_answer = self.memory.search(
+                user_message,
+                mode=mode,
+                threshold=threshold,
+                conv_id=conversation_id,
+            )
+            if cached_answer:
+                evaluation_service.log_event("faiss")
+                return {
+                    "message": self._apply_pronoun_filter(user_message, cached_answer),
+                    "mode": mode,
+                    "source": "faiss",
+                    "state": updated_state
+                }
         
         # 6. Rate Limiting check before LLM
         user_id = updated_state.get("participants", {}).get("buyer_id", "anonymous")
         allowed, remaining = check_llm_rate_limit(user_id)
         if not allowed:
             evaluation_service.log_event("rate_limit")
+            msg = "Dạ, em hơi bận một xíu. Anh/chị đợi em vài giây rồi nhắn lại nhé!"
             return {
-                "message": "Dạ, em hơi bận một xíu. Anh/chị đợi em vài giây rồi nhắn lại nhé!",
+                "message": self._apply_pronoun_filter(user_message, msg),
                 "mode": mode,
                 "source": "rate_limit",
                 "state": updated_state
@@ -433,12 +652,34 @@ class AgentOrchestrator:
         system_prompt = self.CONSULTANT_SYSTEM if mode == "consultant" else self.TRADER_SYSTEM
         context_str = self._get_context_str(updated_state)
         
+        # Marketplace Persona Adjustment
+        seller_id = updated_state.get("participants", {}).get("seller_id")
+        is_admin_stock = (seller_id == "admin-seller-id")
+        
+        if is_admin_stock:
+            system_prompt += "\nLƯU Ý: Xe này là hàng chính chủ của PentaMo (Admin). Hãy khẳng định uy tín và độ an toàn pháp lý 100%."
+        else:
+            system_prompt += "\nLƯU Ý: Xe này thuộc sở hữu của một người bán cá nhân trên sàn. Hãy đóng vai trò trung gian hỗ trợ kết nối và kiểm tra thông tin giúp khách."
+
         full_prompt = f"{system_prompt}\n"
         if context_str:
             full_prompt += f"Ngữ cảnh hiện tại: {context_str}\n"
         if search_context:
             full_prompt += f"Kết quả tra cứu hệ thống: {search_context}\n"
-        full_prompt += f"\nKhách hàng: {user_message}\nAn:"
+            
+        # Xác định xưng hô mong muốn dựa vào tin nhắn khách
+        target_pronoun = "Anh/Chị"
+        user_msg_lower = user_message.lower()
+        if "anh " in user_msg_lower or "anh" == user_msg_lower.strip():
+            target_pronoun = "Anh"
+        elif "chị " in user_msg_lower or "chị" == user_msg_lower.strip():
+            target_pronoun = "Chị"
+            
+        full_prompt += f"\n[LỆNH ÉP BUỘC]: Bạn BẮT BUỘC phải xưng là 'em' và GỌI KHÁCH HÀNG LÀ '{target_pronoun}'. TUYỆT ĐỐI KHÔNG gọi khách là 'em' hay 'bạn'.\n"
+        
+        # Kỹ thuật mồi câu (Prefill) để ép AI đi đúng hướng xưng hô
+        prefix = f"Dạ chào {target_pronoun}, "
+        full_prompt += f"Khách hàng: {user_message}\nAn: {prefix}"
         
         evaluation_service.log_event("llm")
         try:
@@ -447,25 +688,41 @@ class AgentOrchestrator:
                 temperature=0.3,
                 timeout=settings.llm_timeout if hasattr(settings, 'llm_timeout') else 15
             )
+            # Gắn lại prefix vì LLM thường viết tiếp từ đoạn đó
+            ai_response = prefix + ai_response
             # Final Persona Check (Robust Swap)
-            # Prevent "anh thấy em" (mirroring user)
-            resp_lower = ai_response.lower()
-            if "anh thấy em" in resp_lower or "anh hiểu em" in resp_lower or "anh đã tìm" in resp_lower:
-                # Using unique placeholders to avoid double-swap bug
-                ai_response = ai_response.replace("anh", "###T_ANH###").replace("Anh", "###T_ANH_C###")
-                ai_response = ai_response.replace("em", "###T_EM###").replace("Em", "###T_EM_C###")
-                
-                ai_response = ai_response.replace("###T_ANH###", "em").replace("###T_ANH_C###", "Em")
-                ai_response = ai_response.replace("###T_EM###", "anh").replace("###T_EM_C###", "Anh")
+            # Ensure "em" and "anh/chị" are correctly used
+            ai_response = ai_response.replace("Ô tô", "Xe máy").replace("ô tô", "xe máy")
+            ai_response = ai_response.replace("Chúng tôi", "Em").replace("chúng tôi", "em")
             
-            ai_response = ai_response.replace("tôi", "em").replace("Tôi", "Em")
-            ai_response = ai_response.replace("ô tô", "xe máy").replace("Ô tô", "Xe máy")
-            
-            # Cache the new answer
-            self.memory.add(user_message, ai_response, mode)
+            # Avoid mirror hallucination where AI calls itself "anh" because user did
+            if "anh là an" in ai_response.lower() or "tôi là an" in ai_response.lower():
+                 ai_response = ai_response.replace("anh là An", "em là An").replace("Anh là An", "Em là An")
+
+            # Apply final pronoun filter
+            ai_response = self._apply_pronoun_filter(user_message, ai_response)
+
+            # ── Dynamic Pronoun Adjustment ────────────────────────────────────
+            # If the user explicitly called themselves "Anh" or "Chị" in the current message,
+            # we force the AI response to use that specific pronoun instead of "Anh/Chị".
+            user_msg_lower = user_message.lower()
+            if "anh" in user_msg_lower and "chị" not in user_msg_lower:
+                ai_response = ai_response.replace("anh/chị", "anh").replace("Anh/Chị", "Anh")
+            elif "chị" in user_msg_lower and "anh" not in user_msg_lower:
+                ai_response = ai_response.replace("anh/chị", "chị").replace("Anh/Chị", "Chị")
+
+            # ── RAG-Compliant Cache Guard ─────────────────────────────────────
+            # Only cache GENERAL knowledge answers (persona, paperwork, brand Q&A).
+            # NEVER cache answers that contain specific prices, vehicle names, or
+            # figures — those are data-specific and will hallucinate if replayed.
+            if faiss_applicable and self._is_cacheable_response(user_message, ai_response):
+                self.memory.add(user_message, ai_response, mode, conv_id=conversation_id)
+                logger.debug(f"[{conversation_id}] Cached general knowledge answer.")
+            else:
+                logger.debug(f"[{conversation_id}] Cache SKIPPED — data-specific or search-triggered response.")
         except Exception as e:
             logger.error(f"LLM error: {e}")
-            ai_response = "Xin lỗi, em đang gặp chút trục trặc. Anh/chị thử lại sau nhé!"
+            ai_response = self._apply_pronoun_filter(user_message, "Xin lỗi, em đang gặp chút trục trặc. Anh/chị thử lại sau nhé!")
         
         # 9. Final State Update (Schema Aligned)
         updated_state["open_questions"] = self._get_open_questions(updated_state)

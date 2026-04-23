@@ -1,6 +1,7 @@
 import logging
 import json
 import requests
+import threading
 from google import genai
 from typing import Dict, Any, Optional, List
 from config.settings import settings
@@ -138,22 +139,84 @@ class LLMClient:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(LLMClient, cls).__new__(cls)
-            provider_type = settings.llm_provider.lower()
-            
-            # Initialize both if possible for fallback
-            ollama = OllamaProvider()
-            gemini = GeminiProvider() if settings.google_api_key else None
-            
-            if provider_type == "gemini" and gemini:
-                logger.info("🚀 PRIMARY: GEMINI | SECONDARY: OLLAMA")
-                cls._primary_provider = gemini
-                cls._secondary_provider = ollama
-            else:
-                logger.info("🏠 PRIMARY: OLLAMA | SECONDARY: GEMINI (if key exists)")
-                cls._primary_provider = ollama
-                cls._secondary_provider = gemini
-                
+            cls._init_providers()
         return cls._instance
+    
+    @classmethod
+    def _init_providers(cls):
+        provider_type = settings.llm_provider.lower()
+        
+        # Initialize both if possible for fallback
+        ollama = OllamaProvider()
+        gemini = GeminiProvider() if settings.google_api_key else None
+        
+        if provider_type == "gemini" and gemini:
+            logger.info("🚀 PRIMARY: GEMINI | SECONDARY: OLLAMA")
+            cls._primary_provider = gemini
+            cls._secondary_provider = ollama
+        else:
+            logger.info("🏠 PRIMARY: OLLAMA | SECONDARY: GEMINI (if key exists)")
+            cls._primary_provider = ollama
+            cls._secondary_provider = gemini
+    
+    @classmethod
+    def hot_swap_provider(cls, provider_type: str, model_name: str = None) -> Dict[str, Any]:
+        """
+        Hot-swap the primary LLM provider at runtime (no restart needed).
+        Called from admin panel.
+        """
+        try:
+            if provider_type == "gemini":
+                if not settings.google_api_key:
+                    return {"success": False, "error": "GOOGLE_API_KEY not configured"}
+                new_provider = GeminiProvider()
+                if model_name:
+                    new_provider.model_name = model_name
+                cls._primary_provider = new_provider
+                cls._secondary_provider = OllamaProvider()
+                logger.info(f"🔄 Hot-swapped to GEMINI (model: {model_name or settings.gemini_model_name})")
+            elif provider_type == "ollama":
+                new_provider = OllamaProvider()
+                if model_name:
+                    new_provider.model = model_name
+                cls._primary_provider = new_provider
+                cls._secondary_provider = GeminiProvider() if settings.google_api_key else None
+                logger.info(f"🔄 Hot-swapped to OLLAMA (model: {model_name or settings.ollama_model})")
+            else:
+                return {"success": False, "error": f"Unknown provider: {provider_type}"}
+            
+            return {
+                "success": True, 
+                "provider": provider_type, 
+                "model": model_name,
+                "message": f"Đã chuyển LLM sang {provider_type.upper()}"
+            }
+        except Exception as e:
+            logger.error(f"Hot-swap failed: {e}")
+            return {"success": False, "error": str(e)}
+    
+    @classmethod
+    def get_current_config(cls) -> Dict[str, Any]:
+        """Get current LLM configuration"""
+        primary_name = "unknown"
+        primary_model = "unknown"
+        if isinstance(cls._primary_provider, GeminiProvider):
+            primary_name = "gemini"
+            primary_model = cls._primary_provider.model_name
+        elif isinstance(cls._primary_provider, OllamaProvider):
+            primary_name = "ollama"
+            primary_model = cls._primary_provider.model
+        
+        secondary_name = "none"
+        if isinstance(cls._secondary_provider, GeminiProvider):
+            secondary_name = "gemini"
+        elif isinstance(cls._secondary_provider, OllamaProvider):
+            secondary_name = "ollama"
+        
+        return {
+            "primary": {"provider": primary_name, "model": primary_model},
+            "secondary": {"provider": secondary_name},
+        }
     
     def generate(self, prompt: str, **kwargs) -> str:
         # Increase default timeout to configured value
@@ -197,5 +260,59 @@ class LLMClient:
                 
         return {}
 
-# Singleton instance
+
+# ── Singleton instances ──────────────────────────────────────
+
+# Main LLM client (for chat/response generation)
 llm_client = LLMClient()
+
+# Review LLM (for FAISS gate — defaults to Gemini for quality)
+_review_llm_instance: Optional[LLMProvider] = None
+_review_llm_lock = threading.Lock()
+
+
+def get_review_llm() -> Optional[LLMProvider]:
+    """
+    Get the review LLM (used by FAISS gate to refine answers).
+    Defaults to Gemini. Can be hot-swapped by admin.
+    Returns None if no review LLM is available.
+    """
+    global _review_llm_instance
+    with _review_llm_lock:
+        if _review_llm_instance is None:
+            # Default: use Gemini for review (highest quality)
+            if settings.google_api_key:
+                _review_llm_instance = GeminiProvider()
+                logger.info("🔍 Review LLM: GEMINI")
+            else:
+                logger.warning("⚠️ Review LLM: None (GOOGLE_API_KEY not set)")
+        return _review_llm_instance
+
+
+def set_review_llm(provider_type: str, model_name: str = None) -> Dict[str, Any]:
+    """Hot-swap the review LLM at runtime."""
+    global _review_llm_instance
+    import threading as _t
+    with _review_llm_lock:
+        try:
+            if provider_type == "gemini":
+                if not settings.google_api_key:
+                    return {"success": False, "error": "GOOGLE_API_KEY not set"}
+                _review_llm_instance = GeminiProvider()
+                if model_name:
+                    _review_llm_instance.model_name = model_name
+            elif provider_type == "ollama":
+                _review_llm_instance = OllamaProvider()
+                if model_name:
+                    _review_llm_instance.model = model_name
+            elif provider_type == "none":
+                _review_llm_instance = None
+                return {"success": True, "message": "Review LLM disabled"}
+            else:
+                return {"success": False, "error": f"Unknown provider: {provider_type}"}
+            
+            logger.info(f"🔄 Review LLM swapped to {provider_type.upper()}")
+            return {"success": True, "provider": provider_type, "model": model_name}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+

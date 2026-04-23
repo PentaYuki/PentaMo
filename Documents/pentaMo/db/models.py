@@ -79,6 +79,25 @@ class SellerListings(Base):
     image_left = Column(String, nullable=True)
     image_right = Column(String, nullable=True)
     image_fake_score = Column(Float, default=0.0)
+    
+    # Seller Description & Notes
+    description = Column(String, nullable=True)  # Mô tả chi tiết từ người bán
+    seller_notes = Column(String, nullable=True)  # Ghi chú thêm (tình trạng, lý do bán...)
+
+class FAISSPendingReview(Base):
+    """Queue for FAISS entries pending admin review (when Gemini gate is unavailable)"""
+    __tablename__ = "faiss_pending_reviews"
+    
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    question = Column(String, nullable=False)
+    answer_original = Column(String, nullable=False)  # Original LLM answer
+    answer_refined = Column(String, nullable=True)    # Gemini-refined answer (if available)
+    mode = Column(String, default="consultant")
+    status = Column(String, default="PENDING")  # PENDING, APPROVED, REJECTED
+    reason = Column(String, nullable=True)      # Why it's pending (e.g., "gemini_unavailable")
+    reviewed_by = Column(String(36), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class BuyerRequests(Base):
     __tablename__ = "buyer_requests"
